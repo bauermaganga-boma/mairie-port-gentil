@@ -16,20 +16,44 @@ function toast(msg, type = "") {
   clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), 3400);
 }
 
+/* ---------- Retour en arrière : chaque fenêtre, menu ou visionneuse ouverte crée une étape
+   d'historique ; la touche « retour » du téléphone (ou le bouton « ← Retour ») la referme. ---------- */
+const Back = {
+  stack:[], skip:0,
+  open(close) { if (this.stack.includes(close)) return; this.stack.push(close); history.pushState({pogOverlay:this.stack.length}, ""); },
+  close(close) { const i = this.stack.lastIndexOf(close); if (i < 0) return; this.stack.splice(i, 1); this.skip++; history.back(); },
+};
+addEventListener("popstate", () => {
+  if (Back.skip) { Back.skip--; if (Back.stack.length) history.pushState({pogOverlay:Back.stack.length}, ""); return; }
+  const c = Back.stack.pop(); if (c) c(true);
+});
+// Bouton « retour » des pages : page précédente du site, sinon l'accueil
+function goBack() { if (document.referrer && document.referrer.startsWith(location.origin) && history.length > 1) history.back(); else location.href = "index.html"; }
+
+const BACK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>';
+function hideModal(fromPop) {
+  const m = $("#modal"); if (!m || !m.classList.contains("on")) return;
+  if (fromPop && m.dataset.lock) { Back.open(hideModal); return; }   // paiement en cours : on ne ferme pas
+  delete m.dataset.lock; m.classList.remove("on"); document.body.classList.remove("ov-open");
+  if (!fromPop) Back.close(hideModal);
+}
 function modal(title, html) {
   let m = $("#modal");
   if (!m) {
     m = document.createElement("div"); m.id = "modal"; m.className = "modal";
-    m.innerHTML = '<div class="box" role="dialog" aria-modal="true"><div class="mh"><h3></h3><button class="x" aria-label="Fermer">×</button></div><div class="mb"></div></div>';
+    m.innerHTML = '<div class="box" role="dialog" aria-modal="true"><div class="mh"><button class="mback" aria-label="Retour">' + BACK_ICON + '<span>Retour</span></button><h3></h3><button class="x" aria-label="Fermer">×</button></div><div class="mb"></div></div>';
     document.body.appendChild(m);
-    m.addEventListener("click", e => { if ((e.target === m || e.target.closest(".x")) && !m.dataset.lock) m.classList.remove("on"); });
-    document.addEventListener("keydown", e => { if (e.key === "Escape" && !m.dataset.lock) m.classList.remove("on"); });
+    m.addEventListener("click", e => { if ((e.target === m || e.target.closest(".x") || e.target.closest(".mback")) && !m.dataset.lock) hideModal(); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape" && !m.dataset.lock) hideModal(); });
   }
   delete m.dataset.lock;
-  $("h3", m).textContent = title; $(".mb", m).innerHTML = html; m.classList.add("on");
+  $("h3", m).textContent = title; $(".mb", m).innerHTML = html;
+  if (!m.classList.contains("on")) { m.classList.add("on"); document.body.classList.add("ov-open"); Back.open(hideModal); }
+  $(".box", m).scrollTop = 0;
   return m;
 }
-const closeModal = () => { const m = $("#modal"); if (m) { delete m.dataset.lock; m.classList.remove("on"); } };
+const closeModal = () => hideModal();
+window.pogCloseModal = closeModal;
 
 /* ---------- Chargement de bibliothèques (à la demande) ---------- */
 const _scripts = {};
@@ -205,8 +229,9 @@ function renderChrome() {
     <div class="tb-r"><a href="demarches.html#suivi">${ICONS.search}Suivre mon dossier</a><a href="espace.html">${ICONS.lock}Espace agents</a></div>
   </div></div>
   <header class="header"><div class="wrap">
+    ${page !== "index" ? `<button class="hback" type="button" onclick="goBack()" aria-label="Retour">${BACK_ICON}</button>` : ""}
     <a class="brand" href="index.html"><img src="assets/img/logo-pog.svg" alt="Emblème de la Mairie de Port-Gentil"><span><b>Mairie de<br>Port-Gentil</b><small>Capitale économique du Gabon</small></span></a>
-    <nav class="nav" id="nav">${links.map(([k,l]) => `<a href="${k}.html" class="${k===page?"active":""}">${l}</a>`).join("")}<a class="nav-agent" href="espace.html">${ICONS.lock} Espace agents</a><a class="btn btn-orange" href="demarches.html#demande">Démarches en ligne</a></nav>
+    <nav class="nav" id="nav"><div class="nav-top"><button type="button" class="nav-back">${BACK_ICON}<span>Retour</span></button><small>Menu</small></div>${links.map(([k,l]) => `<a href="${k}.html" class="${k===page?"active":""}">${l}</a>`).join("")}<a class="nav-agent" href="espace.html">${ICONS.lock} Espace agents</a><a class="btn btn-orange" href="demarches.html#demande">Démarches en ligne</a></nav>
     <button class="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
   </div></header>`;
 
@@ -252,7 +277,16 @@ function initChrome() {
   addEventListener("scroll", onScroll, {passive:true}); onScroll();
   top && top.addEventListener("click", () => scrollTo({top:0, behavior:"smooth"}));
   const b = $(".burger"), nav = $("#nav");
-  b && b.addEventListener("click", () => { const o = nav.classList.toggle("open"); b.setAttribute("aria-expanded", o); });
+  if (!b || !nav) return;
+  const closeNav = fromPop => {
+    if (!nav.classList.contains("open")) return;
+    nav.classList.remove("open"); b.classList.remove("on"); b.setAttribute("aria-expanded", false); document.body.classList.remove("nav-open");
+    if (!fromPop) Back.close(closeNav);
+  };
+  const openNav = () => { nav.classList.add("open"); b.classList.add("on"); b.setAttribute("aria-expanded", true); document.body.classList.add("nav-open"); Back.open(closeNav); };
+  b.addEventListener("click", () => nav.classList.contains("open") ? closeNav() : openNav());
+  $(".nav-back", nav).addEventListener("click", () => closeNav());
+  addEventListener("resize", () => { if (innerWidth > 1020) closeNav(); });
 }
 
 /* ---------- Animations ---------- */
@@ -537,15 +571,16 @@ function initGallery() {
     f.addEventListener("click", e => { const b = e.target.closest(".tab"); if (!b) return; $$(".tab", f).forEach(x => x.classList.toggle("on", x === b)); $$("figure", g).forEach(fig => fig.classList.toggle("hide", b.dataset.c !== "all" && fig.dataset.cat !== b.dataset.c)); });
   }
   const lb = document.createElement("div"); lb.className = "lightbox";
-  lb.innerHTML = '<button class="lb-x" aria-label="Fermer">×</button><button class="lb-p" aria-label="Précédente">‹</button><img alt=""><button class="lb-n" aria-label="Suivante">›</button><p></p>';
+  lb.innerHTML = '<button class="lb-back" aria-label="Retour">' + BACK_ICON + '<span>Retour</span></button><button class="lb-x" aria-label="Fermer">×</button><button class="lb-p" aria-label="Précédente">‹</button><img alt=""><button class="lb-n" aria-label="Suivante">›</button><p></p>';
   document.body.appendChild(lb);
   let cur = 0;
   const vis = () => $$("figure:not(.hide)", g).map(x => +x.dataset.i);
-  const show = i => { cur = i; $("img", lb).src = IMG(GALERIE[i].img); $("p", lb).textContent = GALERIE[i].t; lb.classList.add("on"); };
+  const hideLb = fromPop => { if (!lb.classList.contains("on")) return; lb.classList.remove("on"); document.body.classList.remove("ov-open"); if (!fromPop) Back.close(hideLb); };
+  const show = i => { cur = i; $("img", lb).src = IMG(GALERIE[i].img); $("p", lb).textContent = GALERIE[i].t; if (!lb.classList.contains("on")) { lb.classList.add("on"); document.body.classList.add("ov-open"); Back.open(hideLb); } };
   const nav = d => { const v = vis(); show(v[(v.indexOf(cur) + d + v.length) % v.length]); };
   g.addEventListener("click", e => { const fig = e.target.closest("figure"); if (fig) show(+fig.dataset.i); });
-  lb.addEventListener("click", e => { if (e.target.matches(".lb-x") || e.target === lb) lb.classList.remove("on"); if (e.target.matches(".lb-p")) nav(-1); if (e.target.matches(".lb-n")) nav(1); });
-  document.addEventListener("keydown", e => { if (!lb.classList.contains("on")) return; if (e.key === "Escape") lb.classList.remove("on"); if (e.key === "ArrowLeft") nav(-1); if (e.key === "ArrowRight") nav(1); });
+  lb.addEventListener("click", e => { if (e.target.closest(".lb-x") || e.target.closest(".lb-back") || e.target === lb) hideLb(); if (e.target.matches(".lb-p")) nav(-1); if (e.target.matches(".lb-n")) nav(1); });
+  document.addEventListener("keydown", e => { if (!lb.classList.contains("on")) return; if (e.key === "Escape") hideLb(); if (e.key === "ArrowLeft") nav(-1); if (e.key === "ArrowRight") nav(1); });
 }
 
 /* ---------- Espace numérique : accès rapides (accueil) ---------- */

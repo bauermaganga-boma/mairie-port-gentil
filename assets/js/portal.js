@@ -50,15 +50,22 @@ const P = (() => {
   function shell() {
     const sb = document.getElementById("sb");
     const draw = () => {
-      sb.innerHTML = `<div class="sb-brand"><img src="assets/img/logo-pog.svg" alt=""><span><b>Mairie de Port-Gentil</b><small>${esc(me.arr ? arrL(me.arr).replace("arr.", "arrondissement") : Store.ROLES[me.role].l)}</small></span></div>` +
+      sb.innerHTML = `<button type="button" class="sb-back" id="sbback">${BACK_ICON}<span>Fermer le menu</span></button><div class="sb-brand"><img src="assets/img/logo-pog.svg" alt=""><span><b>Mairie de Port-Gentil</b><small>${esc(me.arr ? arrL(me.arr).replace("arr.", "arrondissement") : Store.ROLES[me.role].l)}</small></span></div>` +
         NAV.map(n => { const b = n.badge ? n.badge() : 0; return `<a href="#${n.id}" data-v="${n.id}" class="${n.id === cur ? "on" : ""}">${ICONS[n.ic]}${n.l}${b ? `<span class="pill">${b}</span>` : ""}</a>`; }).join("") +
         `<div class="sb-foot"><a href="index.html">${ICONS.home}Retour au site</a><button class="lnk" id="logout">${ICONS.out}Déconnexion</button></div>`;
       document.getElementById("logout").onclick = async () => { await Store.logout(); location.href = "espace.html"; };
+      document.getElementById("sbback").onclick = () => closeSb();
+      const vb = document.getElementById("vback"); if (vb) vb.hidden = cur === NAV[0].id && visited.length <= 1;
     };
     P.redrawNav = draw;
     document.getElementById("who").innerHTML = `<span class="av">${ini(me)}</span><span><b>${esc(me.prenom + " " + me.nom)}</b><small>${esc(me.titre || Store.ROLES[me.role].l)}</small></span>`;
-    document.getElementById("sbt").onclick = e => { e.stopPropagation(); sb.classList.toggle("open"); };
-    document.querySelector(".app-main").addEventListener("click", () => sb.classList.remove("open"));
+    const closeSb = fromPop => { if (!sb.classList.contains("open")) return; sb.classList.remove("open"); document.body.classList.remove("nav-open"); if (!fromPop) Back.close(closeSb); };
+    document.getElementById("sbt").onclick = e => { e.stopPropagation(); if (sb.classList.contains("open")) return closeSb(); sb.classList.add("open"); document.body.classList.add("nav-open"); Back.open(closeSb); };
+    document.querySelector(".app-main").addEventListener("click", () => closeSb());
+    // « ← Retour » : écran précédent du back-office, sinon le tableau de bord
+    const visited = [location.hash.slice(1) || NAV[0].id];
+    const vb = document.getElementById("vback");
+    if (vb) vb.onclick = () => { if (visited.length > 1) history.back(); else location.hash = NAV[0].id; };
     const quit = document.getElementById("quit");
     if (quit) quit.onclick = async () => { quit.disabled = true; await Store.logout().catch(() => {}); location.href = "index.html"; };
     route = (top = true) => {
@@ -70,12 +77,14 @@ const P = (() => {
       while (charts.length) charts.pop().destroy();
       document.getElementById("views").innerHTML = `<div class="view on" id="v-${cur}"></div>`;
       VIEWS[cur](document.getElementById("v-" + cur));
-      draw(); sb.classList.remove("open"); scrollTo(0, top ? 0 : y);
+      if (sb.classList.contains("open")) closeSb();
+      draw(); scrollTo(0, top ? 0 : y);
     };
     P.route = route;
-    addEventListener("hashchange", () => route()); route();
+    addEventListener("hashchange", () => { const h = location.hash.slice(1) || NAV[0].id; if (visited.length > 1 && visited[visited.length - 2] === h) visited.pop(); else if (visited[visited.length - 1] !== h) visited.push(h); route(); });
+    route();
   }
-  const closeModal = () => { const m = document.getElementById("modal"); if (m) m.classList.remove("on"); };
+  const closeModal = () => window.pogCloseModal();
   const refresh = () => { closeModal(); route(false); };
 
   /* =========================================================

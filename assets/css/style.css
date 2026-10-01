@@ -918,3 +918,53 @@ a.pjchip:hover{background:var(--navy);color:#fff}
 .chart.sm{height:220px}
 .dauth{display:flex;gap:.35rem;align-items:flex-start;font-size:.76rem;font-weight:700;color:var(--ok);line-height:1.3;flex:0 0 auto!important}
 .dauth svg{width:15px;height:15px;flex:none}
+
+/* =========================================================
+   Navigation mobile : bouton « Retour » toujours visible (v4)
+   ========================================================= */
+.hback,.nav-top,.mback,.lb-back,.sb-back{display:none}
+.tbtn[hidden],#vback[hidden]{display:none!important}
+.burger span{transform-origin:center}
+.burger.on span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.burger.on span:nth-child(2){opacity:0}
+.burger.on span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+@media (max-width:1020px){
+  body.nav-open{overflow:hidden}
+  .header .wrap{gap:.6rem}
+  .hback{display:inline-grid;place-items:center;width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--navy);cursor:pointer;flex:none}
+  .hback svg{width:20px;height:20px}
+  .brand{margin-right:auto}
+  .nav{padding-top:0}
+  .nav-top{display:flex;align-items:center;justify-content:space-between;gap:.6rem;position:sticky;top:0;z-index:2;background:#fff;margin:0 -1rem .4rem;padding:.7rem 1rem;border-bottom:1px solid var(--line)}
+  .nav-top small{color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:.72rem}
+  .nav-back{display:inline-flex;align-items:center;gap:.45rem;height:42px;padding:0 1rem;border-radius:99px;border:0;background:var(--navy);color:#fff;font-weight:700;cursor:pointer}
+  .nav-back svg{width:18px;height:18px}
+}
+@media (max-width:640px){
+  body.ov-open{overflow:hidden}
+  .modal{padding:0;align-items:stretch}
+  .modal .box{max-width:none;max-height:none;height:100%;border-radius:0;display:flex;flex-direction:column;animation:none}
+  .modal .box .mh{position:sticky;top:0;z-index:5;background:#fff;padding:.7rem 1rem;align-items:center;gap:.6rem;box-shadow:0 6px 16px -12px rgba(7,50,90,.35)}
+  .modal .box .mh h3{font-size:1rem;flex:1;min-width:0;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .modal .box .mb{padding:1.1rem 1rem 2rem;flex:1}
+  .mback{display:inline-flex;align-items:center;gap:.35rem;height:40px;padding:0 .85rem;border-radius:99px;border:0;background:var(--navy);color:#fff;font-weight:700;font-size:.85rem;cursor:pointer;flex:none}
+  .mback svg{width:17px;height:17px}
+  .modal .x{width:40px;height:40px}
+  .lb-back{display:inline-flex;align-items:center;gap:.35rem;top:1rem!important;left:1rem;width:auto!important;padding:0 .9rem!important;border-radius:99px!important;height:44px!important;font-weight:700;font-size:.88rem!important}
+  .lb-back svg{width:17px;height:17px}
+  .lightbox{padding:4.5rem .6rem 3.5rem}
+  .lb-p,.lb-n{top:auto!important;bottom:.8rem}
+  .lightbox p{bottom:1.3rem;padding:0 4rem;font-size:.85rem}
+}
+/* Back-office */
+@media (max-width:900px){
+  .sb-back{display:flex;align-items:center;gap:.5rem;position:sticky;top:-1.4rem;z-index:3;margin:-1.4rem -1rem .8rem;padding:.9rem 1rem;background:var(--navy-2);border:0;color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;width:calc(100% + 2rem);border-bottom:1px solid rgba(255,255,255,.1)}
+  .sb-back svg{width:18px;height:18px}
+  .sidebar{overflow-y:auto}
+  body.nav-open{overflow:hidden}
+  .tbtn.back{background:var(--navy);border-color:var(--navy);color:#fff;flex:none}
+  .tbtn.back:hover{background:var(--blue);color:#fff}
+}
+@media (min-width:901px){#vback{display:none!important}}
+@media (max-width:420px){.tbtn.back span{display:none}.tbtn.back{width:40px;padding:0;justify-content:center}}
+body.ov-open .wa,body.ov-open .totop,body.nav-open .wa,body.nav-open .totop{display:none!important}
