@@ -7,19 +7,19 @@
 const Store = (() => {
   const CFG = window.ESM_CONFIG || {};
   const LIVE = !!(CFG.supabaseUrl && CFG.supabaseAnonKey);
-  const KEY = "pog_db_v3", SKEY = "pog_session";
+  const KEY = "pog_db_v4", SKEY = "pog_session";
   const EMAIL = login => String(login).trim().toLowerCase() + "@mairie-pog.local";
-  const COLS = ["demandes","signalements","actes","agenda","recettes","agents","stocks","chantiers","publications","contacts","journal"];
+  const COLS = ["authentifications","demandes","signalements","actes","agenda","recettes","agents","stocks","chantiers","publications","contacts","journal"];
 
   /* ---------- Rôles et droits ---------- */
   const ROLES = {
     maire:{l:"Cabinet du maire", mods:"*"},
     sg:{l:"Secrétariat général", mods:"*"},
-    etatcivil:{l:"État civil", mods:["tableau","demandes","actes","stocks","journal","compte"]},
+    etatcivil:{l:"État civil", mods:["tableau","authentifications","demandes","actes","stocks","journal","compte"]},
     technique:{l:"Services techniques", mods:["tableau","signalements","chantiers","stocks","compte"]},
     finances:{l:"Finances & recettes", mods:["tableau","indicateurs","recettes","chantiers","compte"]},
     rh:{l:"Ressources humaines", mods:["tableau","agents","compte"]},
-    arrondissement:{l:"Mairie d'arrondissement", mods:["tableau","indicateurs","demandes","signalements","actes","agenda","recettes","chantiers","stocks","publications","contacts","compte"]},
+    arrondissement:{l:"Mairie d'arrondissement", mods:["tableau","indicateurs","authentifications","demandes","signalements","actes","agenda","recettes","chantiers","stocks","publications","contacts","compte"]},
   };
   const STATUTS = {
     demandes:["Nouvelle","En traitement","Pièce manquante","Prête","Remise","Rejetée"],
@@ -67,6 +67,21 @@ const Store = (() => {
     let qn = 4800;
     const addRec = (nature, arr, montant, payeur, mode, date, agent) => { const q = "Q-26-" + String(++qn).padStart(6, "0"); recettes.push({id:"r" + qn, quittance:q, nature, arr, montant, payeur, mode, agent:agent || "Guichet central", date}); return q; };
 
+    // Registre des documents authentifiés (original vérifié une fois au guichet)
+    const authentifications = [];
+    const mkAuth = (o) => { const a = {id:"au" + authentifications.length, historique:[], ...o}; a.num = normNum(a.numAff); authentifications.push(a); return a; };
+    mkAuth({numAff:"0312/2004", type:"naissance", nom:"Mengue", prenoms:"Prisca", naissance:"2004-03-12", lieu:"Port-Gentil", arr:2, tel:"077 12 34 56", statut:"Authentifié", source:"guichet", date:ago(40), authDate:ago(40), agent:"Gisèle Ondo",
+      historique:[{date:ago(40), t:"Original présenté au guichet de la mairie du 2e arrondissement et vérifié dans le registre 2004, volume 3."}]});
+    mkAuth({numAff:"1187/1998", type:"naissance", nom:"Ogoula", prenoms:"Landry", naissance:"1998-07-21", lieu:"Port-Gentil", arr:1, tel:"074 55 66 77", statut:"En attente", source:"en ligne", date:ago(1), authDate:null, agent:"",
+      historique:[{date:ago(1), t:"Numéro déclaré en ligne lors de la demande PG-26-01235 : l'original doit être présenté une fois au guichet."}]});
+    for (let i = 0; i < 46; i++) {
+      const p = person(), arr = arrPick(), y = 1965 + Math.floor(r() * 45), ty = r() < .78 ? "naissance" : r() < .6 ? "mariage" : pick(["diplome","residence","deces"]);
+      const st = r() < .8 ? "Authentifié" : r() < .75 ? "En attente" : "Rejeté", d0 = ago(5 + r() * 170);
+      mkAuth({numAff:String(Math.floor(r() * 2400) + 1).padStart(4, "0") + "/" + (ty === "diplome" ? "BAC" + y : y), type:ty, nom:p.nom, prenoms:p.prenom, naissance:y + "-" + String(1 + Math.floor(r() * 12)).padStart(2, "0") + "-" + String(1 + Math.floor(r() * 28)).padStart(2, "0"), lieu:pick(["Port-Gentil","Port-Gentil","Libreville","Lambaréné","Omboué"]), arr, tel:tel(), statut:st, source:r() < .5 ? "guichet" : "en ligne", date:d0, authDate:st === "En attente" ? null : d0, agent:st === "En attente" ? "" : pick(["Gisèle Ondo","Agent d'état civil – " + arr + (arr === 1 ? "er" : "e") + " arr."]),
+        historique:[{date:d0, t:st === "Authentifié" ? "Original présenté et vérifié au guichet." : st === "Rejeté" ? "Document présenté non conforme au registre (surcharge)." : "Numéro déclaré en ligne : en attente de présentation de l'original."}]});
+    }
+    const authOk = authentifications.filter(a => a.statut === "Authentifié" && a.type === "naissance");
+
     // Demandes (6 mois)
     const demandes = [], types = DEMARCHES.filter(d => !d.signal);
     for (let i = 0; i < 150; i++) {
@@ -90,13 +105,15 @@ const Store = (() => {
         else if (k === 4) { const pd = hist[hist.length - 1].date, mode = pick(["Espèces","Espèces","Airtel Money","Carte bancaire"]); paiement = {choix:"guichet", statut:"Payé", mode, date:pd, quittance:addRec(natureDe(t.id), arr, montant, p.prenom + " " + p.nom, mode, pd, "Guichet")}; }
         else paiement = {choix:"guichet", statut:"À régler"};
       }
-      demandes.push({id:"d" + i, ref, type:t.id, typeLabel:t.t, service:t.service, arr, ...p, tel:tel(), email:"", quartier:pick(Q[arr]), details:t.id === "audience" ? "Présentation d'un projet associatif de quartier." : "", statut:st, date:d0, montant, paiement, pj:[], document:ready && t.doc ? {type:"auto", date:ready} : null, historique:hist.sort((a, b) => a.date.localeCompare(b.date))});
+      let acte = null;
+      if (t.acte && r() < .85) { const au = r() < .75 ? pick(authOk) : pick(authentifications); acte = {num:au.num, numAff:au.numAff, type:au.type, nom:au.nom, statut:au.statut, authDate:au.authDate}; Object.assign(p, {prenom:au.prenoms, nom:au.nom}); }
+      demandes.push({id:"d" + i, ref, acte, type:t.id, typeLabel:t.t, service:t.service, arr, ...p, tel:tel(), email:"", quartier:pick(Q[arr]), details:t.id === "audience" ? "Présentation d'un projet associatif de quartier." : "", statut:st, date:d0, montant, paiement, pj:[], document:ready && t.doc ? {type:"auto", date:ready} : null, historique:hist.sort((a, b) => a.date.localeCompare(b.date))});
     }
-    demandes.push({id:"dx", ref:"PG-26-01234", type:"naissance", typeLabel:"Copie ou extrait d'acte de naissance", service:"État civil", arr:2, prenom:"Prisca", nom:"Mengue", tel:"077 12 34 56", email:"", quartier:"Grand Village", details:"Copie intégrale pour dossier de passeport.", statut:"Prête", date:ago(3), montant:2000,
+    demandes.push({id:"dx", ref:"PG-26-01234", acte:{num:"0312/2004", numAff:"0312/2004", type:"naissance", nom:"Mengue", statut:"Authentifié", authDate:ago(40)}, type:"naissance", typeLabel:"Copie ou extrait d'acte de naissance", service:"État civil", arr:2, prenom:"Prisca", nom:"Mengue", tel:"077 12 34 56", email:"", quartier:"Grand Village", details:"Copie intégrale pour dossier de passeport.", statut:"Prête", date:ago(3), montant:2000,
       paiement:{choix:"en ligne", statut:"Payé", mode:"Airtel Money", date:ago(2.98), quittance:addRec("Frais d'actes d'état civil", 2, 2000, "Prisca Mengue", "Airtel Money", ago(2.98), "Paiement en ligne"), transaction:"AM482913077"}, pj:[], document:{type:"auto", date:ago(1)},
       historique:[{date:ago(3), statut:"Nouvelle", note:"Demande reçue en ligne.", pub:true},{date:ago(2.98), statut:"Nouvelle", note:"Paiement reçu (Airtel Money) : 2 000 FCFA.", pub:true},{date:ago(2), statut:"En traitement", note:"Dossier pris en charge par le service État civil.", pub:true},{date:ago(1.6), statut:"En traitement", note:"Acte retrouvé dans le registre 2004, volume 3.", pub:false},{date:ago(1), statut:"Prête", note:"Votre document est prêt : téléchargez-le en ligne ou retirez-le au guichet.", pub:true}]});
-    demandes.push({id:"dy", ref:"PG-26-01235", type:"residence", typeLabel:"Certificat de résidence", service:"État civil", arr:1, prenom:"Landry", nom:"Ogoula", tel:"074 55 66 77", email:"", quartier:"Cap Lopez", details:"", statut:"En traitement", date:ago(1), montant:2000, paiement:{choix:"guichet", statut:"À régler"}, pj:[], document:null,
-      historique:[{date:ago(1), statut:"Nouvelle", note:"Demande reçue en ligne. Paiement prévu au guichet.", pub:true},{date:ago(.5), statut:"En traitement", note:"Dossier pris en charge par le service État civil.", pub:true}]});
+    demandes.push({id:"dy", ref:"PG-26-01235", acte:{num:"1187/1998", numAff:"1187/1998", type:"naissance", nom:"Ogoula", statut:"En attente", authDate:null}, type:"residence", typeLabel:"Certificat de résidence", service:"État civil", arr:1, prenom:"Landry", nom:"Ogoula", tel:"074 55 66 77", email:"", quartier:"Cap Lopez", details:"", statut:"En traitement", date:ago(1), montant:2000, paiement:{choix:"guichet", statut:"À régler"}, pj:[], document:null,
+      historique:[{date:ago(1), statut:"Nouvelle", note:"Demande reçue en ligne. Paiement prévu au guichet. Acte de naissance n° 1187/1998 non encore authentifié : présentez l'original une seule fois au guichet.", pub:true},{date:ago(.5), statut:"En traitement", note:"Dossier pris en charge par le service État civil.", pub:true}]});
 
     // Signalements (5 mois)
     const signalements = [], STS = STATUTS.signalements;
@@ -191,15 +208,27 @@ const Store = (() => {
       {id:"j2", date:ago(0.6), user:"Rodrigue Mabika", action:"Chantier mis à jour", detail:"Assainissement Cora Wood – carrefour Léon Mba : 85 %", arr:1},
       {id:"j3", date:ago(1.1), user:"Paiement en ligne", action:"Paiement reçu", detail:"PG-26-01234 · Airtel Money · 2 000 FCFA", arr:2},
     ];
-    return {v:3, users, demandes, signalements, actes, agenda, recettes, agents, stocks, chantiers, publications, contacts, journal};
+    return {v:4, authentifications, users, demandes, signalements, actes, agenda, recettes, agents, stocks, chantiers, publications, contacts, journal};
   }
+
+  /* ---------- Registre des documents authentifiés ---------- */
+  function findActe(num, nom, type) {
+    const n = normNum(num), k = normNom(nom);
+    if (!n) return null;
+    const a = (db.authentifications || []).find(x => x.num === n && (!k || normNom(x.nom) === k) && (!type || type === "tout" || x.type === type));
+    if (a) return {id:a.id, num:a.num, numAff:a.numAff, type:a.type, nom:a.nom, prenoms:a.prenoms, statut:a.statut, authDate:a.authDate, arr:a.arr, source:a.source};
+    const r = (db.actes || []).find(x => normNum(x.num) === n && (!k || normNom(x.nom) === k));   // acte du registre numérique de la commune : authentique d'office
+    if (r) return {id:null, num:normNum(r.num), numAff:r.num, type:r.type, nom:r.nom, prenoms:r.prenoms, statut:"Authentifié", authDate:r.date, arr:r.arr, source:"registre"};
+    return null;
+  }
+  const maskNom = (nom, pre) => (pre ? pre[0].toUpperCase() + ". " : "") + String(nom || "").toUpperCase();
 
   /* =========================================================
      MODE DÉMONSTRATION (localStorage)
      ========================================================= */
-  const pub = o => ({ref:o.ref, typeId:o.type, type:o.typeLabel, statut:o.statut, date:o.date, arr:o.arr, prenom:o.prenom, nom:o.nom, quartier:o.quartier, montant:o.montant || 0, paiement:o.paiement || null, document:o.document || null, historique:(o.historique || []).filter(h => h.pub)});
+  const pub = o => ({ref:o.ref, acte:o.acte || null, typeId:o.type, type:o.typeLabel, statut:o.statut, date:o.date, arr:o.arr, prenom:o.prenom, nom:o.nom, quartier:o.quartier, montant:o.montant || 0, paiement:o.paiement || null, document:o.document || null, historique:(o.historique || []).filter(h => h.pub)});
   const Demo = {
-    load() { let d; try { d = JSON.parse(localStorage.getItem(KEY)); } catch (e) {} if (!d || d.v !== 3) { d = seed(); db = d; this.save(); } db = d; },
+    load() { let d; try { d = JSON.parse(localStorage.getItem(KEY)); } catch (e) {} if (!d || d.v !== 4) { d = seed(); db = d; this.save(); } db = d; },
     save() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { throw new Error("Mémoire de démonstration pleine : fichier trop volumineux."); } },
     async init() { this.load(); let id; try { id = sessionStorage.getItem(SKEY); } catch (e) {} me = id ? db.users.find(u => u.id === id) || null : null; return me; },
     async initPublic() { this.load(); },
@@ -219,11 +248,26 @@ const Store = (() => {
       const ref = col === "signalements" ? "SIG-" + yr + "-" + String(300 + db.signalements.length + 1).padStart(4, "0") : col === "demandes" ? "PG-" + yr + "-" + String(1000 + db.demandes.length + 1).padStart(5, "0") : null;
       const first = {demandes:"Nouvelle", signalements:"Nouveau"}[col];
       const n = {pj:[], ...d, id:uid(col[0]), date:now()};
-      if (ref) Object.assign(n, {ref, statut:first, historique:[{date:now(), statut:first, note:col === "demandes" ? "Demande reçue en ligne." + (d.paiement && d.paiement.choix === "guichet" ? " Paiement prévu au guichet." : "") : "Signalement reçu.", pub:true}]});
+      let acteNote = "";
+      if (col === "demandes" && d.numActe) {
+        let a = findActe(d.numActe, d.nomActe || d.nom, d.typeActe);
+        if (!a) {   // première fois : on inscrit le numéro, l'original sera vérifié au guichet
+          const au = {id:uid("a"), num:normNum(d.numActe), numAff:String(d.numActe).trim(), type:d.typeActe || "naissance", nom:d.nomActe || d.nom, prenoms:d.prenom, naissance:"", lieu:"", arr:d.arr, tel:d.tel, statut:"En attente", source:"en ligne", date:now(), authDate:null, agent:"", historique:[{date:now(), t:"Numéro déclaré en ligne : en attente de présentation de l'original."}]};
+          db.authentifications.unshift(au); a = {num:au.num, numAff:au.numAff, type:au.type, nom:au.nom, statut:"En attente", authDate:null};
+        }
+        n.acte = {num:a.num, numAff:a.numAff, type:a.type, nom:a.nom, statut:a.statut, authDate:a.authDate};
+        acteNote = a.statut === "Authentifié" ? ` ${typeDocL(a.type)} n° ${a.numAff} authentifié : original non requis, démarche traitée en ligne.` : ` ${typeDocL(a.type)} n° ${a.numAff} non encore authentifié : présentez l'original une seule fois au guichet.`;
+        delete n.numActe; delete n.nomActe; delete n.typeActe;
+      }
+      if (ref) Object.assign(n, {ref, statut:first, historique:[{date:now(), statut:first, note:col === "demandes" ? "Demande reçue en ligne." + (d.paiement && d.paiement.choix === "guichet" ? " Paiement prévu au guichet." : "") + acteNote : "Signalement reçu.", pub:true}]});
       if (col === "contacts") n.lu = false;
       db[col].unshift(n);
       try { this.save(); } catch (e) { db[col].shift(); throw e; }
       return ref;
+    },
+    async verifDoc(num, nom, type) {
+      this.load(); const a = findActe(num, nom, type);
+      return a ? {numAff:a.numAff, type:a.type, titulaire:maskNom(a.nom, a.prenoms), statut:a.statut, authDate:a.authDate, source:a.source} : null;
     },
     async suivi(ref, tel) {
       this.load(); ref = String(ref).trim().toUpperCase();
@@ -316,6 +360,7 @@ const Store = (() => {
     },
     async remove(col, id) { await q(sb.from("records").delete().eq("id", id)); db[col] = db[col].filter(x => x.id !== id); },
     async submit(col, d) { await ready(); return await q(sb.rpc("submit_public", {p_col:col, p_arr:+d.arr || 0, p_data:d})); },
+    async verifDoc(num, nom, type) { await ready(); return (await q(sb.rpc("verif_document", {p_num:normNum(num), p_nom:normNom(nom), p_type:type || "tout"}))) || null; },
     async suivi(ref, tel) { await ready(); return (await q(sb.rpc("suivi_dossier", {p_ref:String(ref).trim().toUpperCase(), p_tel:telKey(tel)}))) || null; },
     async pay(ref, tel, mode) { await ready(); return await q(sb.rpc("pay_public", {p_ref:String(ref).trim().toUpperCase(), p_tel:telKey(tel), p_mode:mode})); },
     async markDownloaded(ref, tel) { await ready(); await q(sb.rpc("mark_downloaded", {p_ref:ref, p_tel:telKey(tel)})).catch(() => {}); },
@@ -366,6 +411,22 @@ const Store = (() => {
     submitSignalement: d => A.submit("signalements", d),
     addContact: d => A.submit("contacts", d),
     suivi: (ref, tel) => A.suivi(ref, tel),
+    verifDoc: (num, nom, type) => A.verifDoc(num, nom, type),
+    findActe: (num, nom, type) => findActe(num, nom, type),
+    // Statistiques agrégées par arrondissement (sans données personnelles) pour le classement
+    async statsArr(fromIso) {
+      if (LIVE) { await ready(); return await q(sb.rpc("stats_arrondissements", {p_from:fromIso})); }
+      const from = new Date(fromIso).getTime(), inP = x => new Date(x.date).getTime() >= from;
+      const doneAt = d => { const h = (d.historique || []).find(x => /Prête|Remise|Rejetée|Résolu/.test(x.statut)); return h ? h.date : null; };
+      return [1,2,3,4].map(a => {
+        const dem = db.demandes.filter(d => +d.arr === a && inP(d)), sig = db.signalements.filter(x => +x.arr === a && inP(x)), rec = db.recettes.filter(x => +x.arr === a && inP(x));
+        const dl = dem.map(d => doneAt(d) ? (new Date(doneAt(d)) - new Date(d.date)) / 864e5 : null).filter(x => x != null);
+        const tot = rec.reduce((s, x) => s + x.montant, 0);
+        return {arr:a, demandes:dem.length, delai:dl.length ? dl.reduce((s, x) => s + x, 0) / dl.length : null, traitees:dem.length ? dem.filter(doneAt).length / dem.length * 100 : 0,
+          recettes:tot, online:tot ? rec.filter(x => /Airtel|Carte/.test(x.mode)).reduce((s, x) => s + x.montant, 0) / tot * 100 : 0, resolus:sig.length ? sig.filter(x => x.statut === "Résolu").length / sig.length * 100 : 0,
+          enLigne:dem.length ? dem.filter(d => d.acte && d.acte.statut === "Authentifié").length / dem.length * 100 : 0};
+      });
+    },
     pay: (ref, tel, mode) => A.pay(ref, tel, mode),
     markDownloaded: (ref, tel) => A.markDownloaded(ref, tel),
     publicationsPubliques: () => (db.publications || []).filter(p => p.publie).sort((a, b) => b.date.localeCompare(a.date)),

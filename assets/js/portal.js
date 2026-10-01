@@ -90,6 +90,7 @@ const P = (() => {
     const ALL = [
       {id:"tableau", l:"Tableau de bord", ic:"gauge", s:"Vue d'ensemble en temps réel"},
       {id:"indicateurs", l:"Indicateurs", ic:"chart", s:"Camemberts et courbes de pilotage — maire central et maires d'arrondissement"},
+      {id:"authentifications", l:"Actes authentifiés", ic:"shieldok", s:"Original vérifié une seule fois : ensuite, toutes les démarches se font en ligne", badge:() => L("authentifications").filter(a => a.statut === "En attente").length},
       {id:"demandes", l:"Demandes", ic:"inbox", s:"Démarches reçues en ligne et au guichet", badge:() => L("demandes").filter(d => d.statut === "Nouvelle").length},
       {id:"signalements", l:"Signalements", ic:"alert", s:"Problèmes signalés par les habitants", badge:() => L("signalements").filter(d => d.statut === "Nouveau").length},
       {id:"actes", l:"Registre d'état civil", ic:"book", s:"Naissances, mariages et décès enregistrés numériquement"},
@@ -128,7 +129,8 @@ const P = (() => {
         const recByM = months.map(m => [m.toLocaleDateString("fr-FR", {month:"short"}), rec.filter(r => { const d = new Date(r.date); return d.getMonth() === m.getMonth() && d.getFullYear() === m.getFullYear(); }).reduce((a, r) => a + r.montant, 0)]);
         const byArr = [1,2,3,4].map(a => [arrL(a), dem.filter(d => +d.arr === a).length + sig.filter(s => +s.arr === a).length]);
         const journal = Store.list("journal").slice(0, 7);
-        el.innerHTML = kpis(k.slice(0, 4)) +
+        setTimeout(() => arrPanel(el.querySelector("#arrpanel")), 0);
+        el.innerHTML = kpis(k.slice(0, 4)) + (me.arr ? '<div id="arrpanel"></div>' : "") +
           (alerts.length ? `<div class="card"><h2>Alertes ${Store.LIVE ? "" : '<small style="font-weight:500;color:var(--muted);font-size:.8rem">remontées automatiquement</small>'}</h2>${alerts.map(([c, t]) => `<div class="alert-box ${c === "warn" ? "warn" : ""}">${ICONS.alert}<span>${t}</span></div>`).join("")}</div>` : `<div class="alert-box ok">${ICONS.check}<span>Aucune alerte : tout est sous contrôle.</span></div>`) +
           `<div class="bo-grid">
             ${Store.can("recettes") ? `<div class="card"><h2>Recettes des 6 derniers mois</h2>${vbars(recByM, mshort)}</div>` : ""}
@@ -139,6 +141,43 @@ const P = (() => {
             ${Store.can("agenda") ? `<div class="card"><h2>Prochains rendez-vous <a class="btn btn-line btn-sm" href="#agenda">Agenda</a></h2>${calList(L("agenda").filter(e => new Date(e.date) > Date.now() - 864e5).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 4))}</div>` : ""}
             ${Store.can("journal") || Store.ROLES[me.role].mods === "*" ? `<div class="card"><h2>Activité récente <a class="btn btn-line btn-sm" href="#journal">Journal</a></h2>${journal.length ? `<div class="hist">${journal.map(j => `<div><small>${ago(j.date)} · ${esc(j.user)}</small><b>${esc(j.action)}</b> — ${esc(j.detail)}</div>`).join("")}</div>` : empty("Aucune activité")}</div>` : ""}
           </div>`;
+      },
+
+      /* ---------------- Registre des documents authentifiés ---------------- */
+      authentifications(el) {
+        const f = F.au || (F.au = {statut:"", type:"", arr:"", q:""});
+        const all = L("authentifications");
+        const draw = () => {
+          const list = all.filter(a => (!f.statut || a.statut === f.statut) && (!f.type || a.type === f.type) && (!f.arr || String(a.arr) === f.arr) && (!f.q || (a.numAff + " " + a.nom + " " + a.prenoms).toLowerCase().includes(f.q.toLowerCase())))
+            .sort((a, b) => (a.statut === "En attente" ? 0 : 1) - (b.statut === "En attente" ? 0 : 1) || b.date.localeCompare(a.date));
+          el.querySelector("#list").innerHTML = tbl(["Numéro","Type","Titulaire","Arr.","Inscrit","Statut","Démarches"], list.slice(0, 250).map(a => `<tr class="clk" data-id="${a.id}"><td><b>${esc(a.numAff)}</b></td><td>${esc(typeDocL(a.type))}</td><td>${esc(a.prenoms)} ${esc(a.nom)}</td><td>${arrL(a.arr)}</td><td style="white-space:nowrap">${date(a.date)}<br><small style="color:var(--muted)">${a.source === "guichet" ? "au guichet" : "en ligne"}</small></td><td>${acteChip(a)}</td><td>${Store.db().demandes.filter(x => x.acte && x.acte.num === a.num).length}</td></tr>`), "Aucun document");
+          el.querySelector("#cnt").textContent = list.length + " document(s)";
+          el.querySelectorAll("#list [data-id]").forEach(tr => tr.onclick = () => authFiche(tr.dataset.id));
+        };
+        const n = st => all.filter(a => a.statut === st).length, dem = L("demandes").filter(d => d.acte), simp = dem.filter(d => d.acte.statut === "Authentifié").length;
+        el.innerHTML = kpis([["shieldok","ic-g", n("Authentifié"), "documents authentifiés"],["clock","ic-o", n("En attente"), "originaux à vérifier au guichet"],["check","ic-b", dem.length ? Math.round(simp / dem.length * 100) + " %" : "—", "démarches sans original (100 % en ligne)"],["alert","ic-y", n("Rejeté"), "documents non conformes"]]) +
+          `<div class="alert-box ok">${ICONS.shieldok}<span><b>Principe :</b> l'original d'un acte est vérifié <b>une seule fois</b>. Une fois authentifié, son numéro est reconnu sur toute la plateforme (badge 🛡) et l'original n'est plus demandé : renouvellements, duplicatas et légalisations se font en ligne, l'usager passe seulement récupérer.</span></div>
+          <div class="card"><h2><span>Registre des documents <small id="cnt" style="color:var(--muted);font-weight:500;font-size:.8rem"></small></span><span class="mini-btns"><button class="btn btn-orange btn-sm" id="new">${ICONS.plus} Authentifier au guichet</button><button class="btn btn-line btn-sm" id="exp">${ICONS.dl} Export</button></span></h2>
+          <div class="toolbar"><div class="field"><label>Rechercher</label><input data-f="q" placeholder="Numéro, nom, prénom" value="${esc(f.q)}"></div><div class="field"><label>Statut</label><select data-f="statut">${opt([["","Tous"],["En attente","À vérifier"],["Authentifié","Authentifiés"],["Rejeté","Non conformes"]], f.statut)}</select></div><div class="field"><label>Type</label><select data-f="type"><option value="">Tous</option>${opt(TYPES_DOC, f.type)}</select></div>${me.arr ? "" : `<div class="field"><label>Arrondissement</label><select data-f="arr"><option value="">Tous</option>${opt(ARR_OPTS.slice(1), f.arr)}</select></div>`}</div>
+          <div id="list"></div></div>`;
+        filterBar(null, e => { f[e.target.dataset.f] = e.target.value; draw(); }, el);
+        el.querySelector("#exp").onclick = () => csv("documents-authentifies", ["Numéro","Type","Nom","Prénoms","Naissance","Arrondissement","Statut","Authentifié le","Agent"], all.map(a => [a.numAff, typeDocL(a.type), a.nom, a.prenoms, a.naissance, arrL(a.arr), a.statut, a.authDate ? date(a.authDate) : "", a.agent]));
+        el.querySelector("#new").onclick = () => {
+          modal("Authentifier un document au guichet", `<form class="form" id="naf"><p class="alert-box warn">${ICONS.alert}<span>L'usager présente l'<b>original</b>. Vérifiez-le, puis enregistrez son numéro : il sera reconnu pour toutes ses démarches futures.</span></p>
+            <div class="row"><div class="field"><label>Type de document</label><select name="type">${opt(TYPES_DOC)}</select></div><div class="field"><label>Numéro du document</label><input name="numAff" required placeholder="Ex. 0312/2004"></div></div>
+            <div class="row"><div class="field"><label>Nom</label><input name="nom" required></div><div class="field"><label>Prénom(s)</label><input name="prenoms" required></div></div>
+            <div class="row"><div class="field"><label>Date de naissance</label><input name="naissance" type="date"></div><div class="field"><label>Lieu</label><input name="lieu" value="Port-Gentil"></div></div>
+            <div class="row"><div class="field"><label>Téléphone</label><input name="tel"></div><div class="field"><label>Arrondissement</label><select name="arr" ${me.arr ? "disabled" : ""}>${opt(ARR_OPTS.slice(1), me.arr || 1)}</select></div></div>
+            <button class="btn btn-orange">${ICONS.shieldok} Original vérifié : enregistrer et authentifier</button></form>`);
+          document.getElementById("naf").onsubmit = async e => {
+            e.preventDefault(); const d = Object.fromEntries(new FormData(e.target)); d.arr = me.arr || +d.arr; d.num = normNum(d.numAff);
+            const ex = Store.db().authentifications.find(x => x.num === d.num && normNom(x.nom) === normNom(d.nom));
+            if (ex) { if (ex.statut === "Authentifié") return toast("Ce document est déjà authentifié.", "err"); closeModal(); if (await authentifier(ex, true, "original présenté au guichet")) refresh(); return; }
+            const now = new Date().toISOString();
+            if (await act(() => Store.add("authentifications", {...d, statut:"Authentifié", source:"guichet", authDate:now, agent:me.prenom + " " + me.nom, historique:[{date:now, t:"Original présenté et vérifié au guichet par " + me.prenom + " " + me.nom + "."}]}), "Document authentifié : il ne sera plus demandé.")) { Store.log("Acte authentifié", typeDocL(d.type) + " n° " + d.numAff + " · " + d.nom); refresh(); }
+          };
+        };
+        draw();
       },
 
       /* ---------------- Indicateurs de gestion (camemberts & courbes) ---------------- */
@@ -168,6 +207,7 @@ const P = (() => {
             <div class="field" style="flex:0 0 auto"><label>&nbsp;</label><button class="btn btn-line btn-sm" id="pdfind" style="height:42px">${ICONS.print} Imprimer</button></div></div></div>` +
           kpis([["inbox","ic-b", S.nDem, "demandes reçues"],["clock","ic-y", one(S.delai) + " j", "délai moyen de traitement"],["check","ic-g", Math.round(S.traitees) + " %", "demandes traitées"],["wallet","ic-g", mshort(S.recettes), "FCFA encaissés"]]) +
           kpis([["phone","ic-o", Math.round(S.online) + " %", "des recettes payées en ligne"],["alert","ic-o", S.sig.length, "signalements reçus"],["wave","ic-b", Math.round(S.resolus) + " %", "signalements résolus"],["crane","ic-y", Math.round(S.avct) + " %", "avancement moyen des chantiers"]]) +
+          (A ? `<div class="card"><h2>Position de la mairie du ${arrL(A).replace("arr.", "arrondissement")} parmi les 4 arrondissements</h2><div id="rankbox"><p class="empty">Calcul…</p></div></div>` : "") +
           `<div class="bo-grid">
             <div class="card"><h2>Demandes reçues et traitées par mois</h2><div class="chart"><canvas id="c1"></canvas></div></div>
             <div class="card"><h2>${A ? "Recettes mensuelles" : "Recettes mensuelles par arrondissement"}</h2><div class="chart"><canvas id="c2"></canvas></div></div>
@@ -180,6 +220,7 @@ const P = (() => {
           </div>
           ${A ? "" : `<div class="card"><h2>Tableau comparatif des arrondissements <button class="btn btn-line btn-sm" id="expind">${ICONS.dl} Export</button></h2><div id="cmp"></div><p style="color:var(--muted);font-size:.8rem;margin-top:.6rem">En vert : meilleur résultat de la période. Données de démonstration fictives.</p></div>`}`;
         filterBar(null, e => { f[e.target.dataset.f] = e.target.dataset.f === "per" ? +e.target.value : e.target.value; route(false); }, el);
+        if (A) Store.statsArr(months[0].toISOString()).then(st => { const b = el.querySelector("#rankbox"); if (b) b.innerHTML = rankHTML(st, A); }).catch(() => {});
         el.querySelector("#pdfind").onclick = () => print();
         // Tableau comparatif
         if (!A) {
@@ -513,7 +554,7 @@ const P = (() => {
         .sort((a, b) => b.date.localeCompare(a.date));
       el.querySelector("#list").innerHTML = tbl(isD ? ["Dossier","Demandeur","Démarche","Arr.","Déposé","Paiement","Statut"] : ["Réf.","Problème","Lieu","Arr.","Priorité","Signalé","Statut"],
         list.map(d => isD
-          ? `<tr class="clk" data-id="${d.id}"><td><b>${d.ref}</b></td><td>${esc(d.prenom)} ${esc(d.nom)}<br><small style="color:var(--muted)">${esc(d.tel)}</small></td><td>${esc(d.typeLabel)}</td><td>${arrL(d.arr)}</td><td style="white-space:nowrap">${date(d.date)}${open(d.statut) && days(d.date) > 7 ? ` <span class="chip warn">+7 j</span>` : ""}</td><td>${payChip(d)}${(d.pj || []).length ? ` <span class="chip neu" title="Pièces jointes">📎 ${d.pj.length}</span>` : ""}</td><td>${stChip(d.statut)}</td></tr>`
+          ? `<tr class="clk" data-id="${d.id}"><td><b>${d.ref}</b></td><td>${esc(d.prenom)} ${esc(d.nom)}<br><small style="color:var(--muted)">${esc(d.tel)}</small></td><td>${esc(d.typeLabel)}</td><td>${arrL(d.arr)}</td><td style="white-space:nowrap">${date(d.date)}${open(d.statut) && days(d.date) > 7 ? ` <span class="chip warn">+7 j</span>` : ""}</td><td>${payChip(d)} ${acteChip(d.acte)}${(d.pj || []).length ? ` <span class="chip neu" title="Pièces jointes">📎 ${d.pj.length}</span>` : ""}</td><td>${stChip(d.statut)}</td></tr>`
           : `<tr class="clk" data-id="${d.id}"><td><b>${d.ref}</b></td><td>${esc(d.typeLabel)}</td><td>${esc(d.quartier)}<br><small style="color:var(--muted)">${esc(d.lieu || "")}</small></td><td>${arrL(d.arr)}</td><td>${d.priorite === "Haute" ? `<span class="chip bad">Haute</span>` : `<span class="chip neu">Normale</span>`}</td><td style="white-space:nowrap">${ago(d.date)}${(d.pj || []).length ? ` <span class="chip neu">📷 ${d.pj.length}</span>` : ""}</td><td>${stChip(d.statut)}</td></tr>`), "Aucun dossier ne correspond aux filtres");
       el.querySelector("#cnt").textContent = list.length + " dossier(s)";
       el.querySelectorAll("#list [data-id]").forEach(tr => tr.onclick = () => fiche(col, tr.dataset.id));
@@ -544,8 +585,67 @@ const P = (() => {
     draw();
   }
 
+  const CHART_JS = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js";
+  const sixMonthsIso = () => { const off = new Date().getDate() <= 7 ? 1 : 0, d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); d.setMonth(d.getMonth() - 5 - off); return d.toISOString(); };
+  function rankHTML(st, a) {
+    const mine = st.find(x => +x.arr === +a); if (!mine) return "";
+    const KP = [["demandes","Demandes reçues", v => v, false],["delai","Délai moyen de traitement", v => v == null ? "—" : v.toFixed(1).replace(".", ",") + " j", true],["traitees","Demandes traitées", v => Math.round(v) + " %", false],["recettes","Recettes encaissées", v => mshort(v) + " FCFA", false],["online","Recettes payées en ligne", v => Math.round(v) + " %", false],["resolus","Signalements résolus", v => Math.round(v) + " %", false],["enLigne","Démarches sans original (acte authentifié)", v => Math.round(v) + " %", false]];
+    return `<div class="ranks">${KP.map(([k, l, fm, low]) => {
+      const vals = st.map(x => x[k]).filter(v => v != null), avg = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null;
+      const sorted = st.filter(x => x[k] != null).slice().sort((x, y) => low ? x[k] - y[k] : y[k] - x[k]), pos = sorted.findIndex(x => +x.arr === +a) + 1;
+      return `<div class="rk ${pos === 1 ? "top" : pos === 4 ? "low" : ""}"><small>${l}</small><b>${fm(mine[k])}</b><span class="pos">${pos ? pos + (pos === 1 ? "er" : "e") + " / 4" : "—"}</span><em>Moyenne commune : ${avg == null ? "—" : fm(avg)}</em></div>`;
+    }).join("")}</div>`;
+  }
+  async function arrPanel(box) {
+    if (!box || !me.arr) return;
+    const a = me.arr, from = sixMonthsIso();
+    let st = []; try { st = await Store.statsArr(from); } catch (e) {}
+    box.innerHTML = `<div class="card arr-panel"><h2><span>${ICONS.chart} Mes indicateurs — Mairie du ${arrL(a).replace("arr.", "arrondissement")} <small style="color:var(--muted);font-weight:500;font-size:.8rem">6 derniers mois</small></span><a class="btn btn-orange btn-sm" href="#indicateurs">Tous mes indicateurs</a></h2>
+      ${rankHTML(st, a)}
+      <div class="bo-grid three"><div><h4>Demandes par statut</h4><div class="chart pie sm"><canvas id="ap1"></canvas></div></div><div><h4>Recettes mensuelles</h4><div class="chart sm"><canvas id="ap2"></canvas></div></div><div><h4>Moyens de paiement</h4><div class="chart pie sm"><canvas id="ap3"></canvas></div></div></div></div>`;
+    await loadScript(CHART_JS).catch(() => {});
+    if (!window.Chart || !document.getElementById("ap1")) return;
+    const C = window.Chart, fromT = new Date(from).getTime(), dem = Store.list("demandes").filter(d => new Date(d.date) >= fromT), rec = Store.list("recettes").filter(r => new Date(r.date) >= fromT);
+    const mk = (id, cfg) => charts.push(new C(document.getElementById(id), {...cfg, options:{maintainAspectRatio:false, responsive:true, ...(cfg.options || {})}}));
+    const sts = Store.STATUTS.demandes;
+    mk("ap1", {type:"doughnut", data:{labels:sts, datasets:[{data:sts.map(x => dem.filter(d => d.statut === x).length), backgroundColor:["#c0392b","#1477b5","#e67e22","#0a8a55","#07325a","#9aa5b8"], borderColor:"#fff", borderWidth:2}]}, options:{cutout:"55%", plugins:{legend:{position:"bottom", labels:{boxWidth:10, font:{size:10}}}}}});
+    const ms = [...Array(6)].map((_, i) => { const d = new Date(from); d.setMonth(d.getMonth() + i); return d; });
+    mk("ap2", {type:"line", data:{labels:ms.map(m => m.toLocaleDateString("fr-FR", {month:"short"})), datasets:[{label:"Recettes", data:ms.map(m => rec.filter(r => { const d = new Date(r.date); return d.getMonth() === m.getMonth() && d.getFullYear() === m.getFullYear(); }).reduce((s, r) => s + r.montant, 0)), borderColor:"#0a8a55", backgroundColor:"#0a8a5522", fill:true, tension:.35}]}, options:{plugins:{legend:{display:false}, tooltip:{callbacks:{label:c => " " + mshort(c.raw) + " FCFA"}}}, scales:{y:{beginAtZero:true, ticks:{callback:v => mshort(v)}}, x:{grid:{display:false}}}}});
+    mk("ap3", {type:"doughnut", data:{labels:Store.MODES, datasets:[{data:Store.MODES.map(mo => rec.filter(r => r.mode === mo).reduce((s, r) => s + r.montant, 0)), backgroundColor:["#07325a","#e40000","#1477b5","#9aa5b8"], borderColor:"#fff", borderWidth:2}]}, options:{cutout:"55%", plugins:{legend:{position:"bottom", labels:{boxWidth:10, font:{size:10}}}}}});
+  }
+
+  const acteChip = a => !a ? "" : a.statut === "Authentifié" ? `<span class="chip ok" title="${esc(typeDocL(a.type))} n° ${esc(a.numAff || a.num)} authentifié">🛡 Authentifié</span>` : a.statut === "Rejeté" ? `<span class="chip bad">Acte non conforme</span>` : `<span class="chip warn" title="Original à présenter au guichet">Original à vérifier</span>`;
+  async function authentifier(au, ok, note) {
+    const d = new Date().toISOString(), statut = ok ? "Authentifié" : "Rejeté";
+    const h = (au.historique || []).concat([{date:d, t:(ok ? "Original vérifié et authentifié" : "Document non conforme") + " par " + me.prenom + " " + me.nom + (note ? " : " + note : ".")}]);
+    if (!await act(() => Store.update("authentifications", au.id, {statut, authDate:ok ? d : null, agent:me.prenom + " " + me.nom, historique:h}), ok ? "Document authentifié : il ne sera plus demandé." : "Document marqué non conforme.")) return false;
+    for (const dm of Store.db().demandes.filter(x => x.acte && x.acte.num === au.num)) {
+      const hist = dm.historique.concat([{date:d, statut:dm.statut, note:ok ? `${typeDocL(au.type)} n° ${au.numAff} authentifié : l'original ne vous sera plus demandé pour vos prochaines démarches.` : `${typeDocL(au.type)} n° ${au.numAff} non reconnu : rapprochez-vous du service de l'état civil.`, pub:true}]);
+      await Store.update("demandes", dm.id, {acte:{...dm.acte, statut, authDate:ok ? d : null}, historique:hist}).catch(() => {});
+    }
+    Store.log(ok ? "Acte authentifié" : "Acte rejeté", typeDocL(au.type) + " n° " + au.numAff + " · " + au.nom);
+    return true;
+  }
+  function authFiche(id) {
+    const au = Store.db().authentifications.find(x => x.id === id); if (!au) return;
+    const linked = Store.db().demandes.filter(x => x.acte && x.acte.num === au.num);
+    modal(typeDocL(au.type) + " n° " + au.numAff, `<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">${acteChip(au)}<span class="chip neu">${arrL(au.arr)}</span><span class="chip neu">Inscrit ${au.source === "guichet" ? "au guichet" : "en ligne"}</span></div>
+      <div class="kv"><div><small>Titulaire</small><b>${esc(au.prenoms)} ${esc(au.nom)}</b></div><div><small>Date de naissance</small><b>${au.naissance ? date(au.naissance) : "—"}</b></div><div><small>Lieu</small><b>${esc(au.lieu || "—")}</b></div><div><small>Téléphone</small><b>${esc(au.tel || "—")}</b></div><div><small>Authentifié le</small><b>${au.authDate ? date(au.authDate) : "—"}</b></div><div><small>Par</small><b>${esc(au.agent || "—")}</b></div></div>
+      <h4 style="color:var(--navy)">Historique</h4><div class="hist">${(au.historique || []).slice().reverse().map(x => `<div><small>${dtime(x.date)}</small>${esc(x.t)}</div>`).join("") || "<div>—</div>"}</div>
+      <h4 style="color:var(--navy)">Démarches utilisant ce numéro (${linked.length})</h4>${linked.length ? `<div class="hist">${linked.map(x => `<div><b>${x.ref}</b> — ${esc(x.typeLabel)} · ${stChip(x.statut)}</div>`).join("")}</div>` : "<p style='color:var(--muted)'>Aucune pour le moment.</p>"}
+      ${au.statut !== "Authentifié" ? `<form class="form" id="authf" style="border-top:1px solid var(--line);padding-top:1rem"><p class="alert-box warn">${ICONS.alert}<span>Vérifiez l'<b>original</b> présenté par l'usager (cachet, signature, concordance avec le registre) avant de valider.</span></p>
+        <div class="field"><label>Observation</label><input name="note" placeholder="Ex. vérifié dans le registre 1998, volume 2"></div>
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap"><button class="btn btn-orange" name="ok" value="1">${ICONS.shieldok} Original vérifié : authentifier</button><button class="btn btn-line" name="ok" value="0">Non conforme</button></div></form>` : `<div class="auth-badge ok"><span class="shield">${ICONS.shieldok}</span><span><b>Authentifié</b><small>L'original n'est plus demandé : copies, duplicatas, renouvellements et légalisations se font en ligne, l'usager passe seulement récupérer.</small></span></div>`}`);
+    const f = document.getElementById("authf");
+    if (f) f.addEventListener("submit", async e => { e.preventDefault(); const ok = e.submitter && e.submitter.value === "1"; if (await authentifier(au, ok, f.note.value)) refresh(); });
+  }
+
   const payChip = d => { const p = d.paiement || {}; return p.statut === "Payé" ? `<span class="chip ok" title="${esc(p.mode || "")}">Payé${p.mode ? " · " + (p.mode === "Airtel Money" ? "Airtel" : p.mode === "Carte bancaire" ? "Carte" : esc(p.mode)) : ""}</span>` : p.statut === "À régler" ? `<span class="chip warn">À régler${p.choix === "guichet" ? " (guichet)" : ""}</span>` : `<span class="chip neu">Gratuit</span>`; };
   const pubOf = d => ({ref:d.ref, typeId:d.type, type:d.typeLabel, prenom:d.prenom, nom:d.nom, quartier:d.quartier, arr:d.arr, date:d.date, montant:d.montant, paiement:d.paiement, document:d.document});
+
+  const acteHTML = a => a.statut === "Authentifié"
+    ? `<div class="auth-badge ok"><span class="shield">${ICONS.shieldok}</span><span><b>${esc(typeDocL(a.type))} n° ${esc(a.numAff || a.num)} — authentifié</b><small>Original déjà vérifié${a.authDate ? " le " + date(a.authDate) : ""} : ne pas le redemander. Traiter en ligne ; l'usager passe seulement récupérer.</small></span></div>`
+    : `<div class="auth-badge ${a.statut === "Rejeté" ? "bad" : "wait"}"><span class="shield">${ICONS.shield}</span><span><b>${esc(typeDocL(a.type))} n° ${esc(a.numAff || a.num)} — ${a.statut === "Rejeté" ? "non conforme" : "à authentifier"}</b><small>Exiger l'original lors du passage au guichet, puis l'authentifier : il ne sera plus jamais demandé.</small></span><button type="button" class="btn btn-orange btn-sm" id="goauth">${ICONS.shieldok} Authentifier</button></div>`;
 
   function fiche(col, id) {
     const d = Store.db()[col].find(x => x.id === id); if (!d) return;
@@ -562,7 +662,7 @@ const P = (() => {
     modal(d.ref + " · " + d.typeLabel, `<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">${stChip(d.statut)}<span class="chip neu">${arrL(d.arr)}</span>${isD ? payChip(d) : ""}${d.priorite ? `<span class="chip ${d.priorite === "Haute" ? "bad" : "neu"}">Priorité ${d.priorite.toLowerCase()}</span>` : ""}</div>
       <div class="kv"><div><small>${isD ? "Demandeur" : "Signalé par"}</small><b>${esc(d.prenom)} ${esc(d.nom)}</b></div><div><small>Téléphone</small><b>${esc(d.tel)}</b></div><div><small>Quartier</small><b>${esc(d.quartier)}</b></div><div><small>Déposé le</small><b>${date(d.date)}</b></div>${isD ? `<div><small>Service</small><b>${esc(d.service)}</b></div>` : `<div><small>Lieu</small><b>${esc(d.lieu || "—")}</b></div>`}</div>
       ${d.details || d.description ? `<p style="background:var(--bg);padding:.8rem 1rem;border-radius:10px;font-size:.9rem">${esc(d.details || d.description)}</p>` : ""}
-      ${payBox}${pjBox}${docBox}
+      ${d.acte ? `<h4 style="margin-top:1rem;color:var(--navy)">Document de référence</h4>${acteHTML(d.acte)}` : ""}${payBox}${pjBox}${docBox}
       <h4 style="margin-top:1.2rem;color:var(--navy)">Historique</h4>
       <div class="hist">${d.historique.slice().reverse().map(h => `<div class="${h.pub ? "" : "priv"}"><small>${dtime(h.date)} · ${h.pub ? "visible par l'usager" : "note interne"}</small><b>${esc(h.statut)}</b> — ${esc(h.note)}</div>`).join("")}</div>
       <form class="form" id="sf" style="border-top:1px solid var(--line);padding-top:1rem">
@@ -570,6 +670,7 @@ const P = (() => {
         <div class="field"><label>Message / note</label><textarea name="note" style="min-height:80px" required></textarea></div>
         <label style="display:flex;gap:.5rem;align-items:center;font-size:.88rem"><input type="checkbox" name="pub" checked> Visible par l'usager dans le suivi en ligne</label>
         <div style="display:flex;gap:.6rem;flex-wrap:wrap"><button class="btn btn-orange">${ICONS.save} Mettre à jour le dossier</button>${d.tel ? `<a class="btn btn-line" href="tel:${esc(d.tel.replace(/\s/g, ""))}">${ICONS.phone} Appeler</a>` : ""}</div></form>`);
+    const ab = document.getElementById("goauth"); if (ab) ab.onclick = () => { const au = Store.db().authentifications.find(x => x.num === d.acte.num); closeModal(); if (au) authFiche(au.id); else toast("Numéro introuvable dans le registre.", "err"); };
     const fm = document.getElementById("sf");
     const setNote = () => { fm.note.value = nextNote[fm.statut.value] ?? ""; };
     fm.statut.onchange = setNote; if (fm.statut.value === d.statut) fm.note.value = "";

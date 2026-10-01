@@ -25,6 +25,8 @@ const check = (l, ok, i = "") => { console.log((ok ? "OK  " : "ECHEC ") + l, i);
   await p.select("#arr", "3"); await p.click("[data-next]");
   await p.type("#prenom", "Test"); await p.type("#nom", "Citoyen"); await p.type("#tel", "077112233"); await p.type("#quartier", "Grand Village");
   await p.evaluate(() => document.querySelectorAll(".fstep")[1].querySelector("[data-next]").click());
+  await p.type("#numActe", "4321/2001"); await p.click("#verif"); await W(500);
+  check("numéro inconnu : à authentifier", (await txt("#acte-res")).includes("À authentifier"));
   const up = await p.$("#pj"); await up.uploadFile(img); await W(300);
   await p.evaluate(() => document.querySelectorAll(".fstep")[2].querySelector("[data-next]").click()); await W(200);
   check("étape paiement avec Airtel Money / carte / guichet", (await txt("#pay-step")).includes("Airtel Money") && (await txt("#pay-step")).includes("Payer à la mairie"));
@@ -43,6 +45,31 @@ const check = (l, ok, i = "") => { console.log((ok ? "OK  " : "ECHEC ") + l, i);
   await p.click("#list [data-id]"); await W(400);
   check("fiche : pièce jointe visible", (await txt("#modal")).includes("piece-identite"));
   await p.select("#sf [name=statut]", "Prête"); await p.click("#sf button.btn-orange"); await W(800);
+  // 2b. Authentification au guichet (original présenté une seule fois)
+  await p.goto(B + "agents.html#authentifications"); await W(800);
+  await p.type("[data-f=q]", "4321/2001"); await W(300); await p.click("#list [data-id]"); await W(400);
+  await p.click("#authf button[value='1']"); await W(1200);
+  check("acte authentifié au guichet", (await txt("#list")).includes("Authentifié"));
+  await shot("v3-authentifications");
+  // 2c. Deuxième démarche avec le même numéro : reconnu, original non requis
+  await p.goto(B + "demarches.html?d=duplicata#demande", {waitUntil:"networkidle0"});
+  await p.select("#arr", "3"); await p.click("[data-next]");
+  await p.type("#prenom", "Test"); await p.type("#nom", "Citoyen"); await p.type("#tel", "077112233"); await p.type("#quartier", "Grand Village");
+  await p.evaluate(() => document.querySelectorAll(".fstep")[1].querySelector("[data-next]").click());
+  await p.type("#numActe", "N° 4321 / 2001"); await p.click("#verif"); await W(500);
+  check("même numéro reconnu : badge Authentifié", (await txt("#acte-res")).includes("Authentifié"));
+  await shot("v3-badge-demande");
+  await p.evaluate(() => document.querySelectorAll(".fstep")[2].querySelector("[data-next]").click()); await W(200);
+  await p.evaluate(() => { const g = [...document.querySelectorAll("[name=payer]")].find(x => x.value === "guichet"); g.checked = true; document.querySelector(".fstep.on input[type=checkbox]").checked = true; });
+  await p.click("button[type=submit]"); await W(1200);
+  check("confirmation : original non requis", (await txt("#modal")).includes("il ne vous sera plus demandé"));
+  // vérification publique
+  await p.goto(B + "demarches.html#authentification", {waitUntil:"networkidle0"});
+  await p.type("#anum", "0312/2004"); await p.type("#anom", "Mengué"); await p.click("#auth-form button"); await W(600);
+  check("vérification publique d'un numéro", (await txt("#auth-out")).includes("Authentifié"));
+  await p.$eval("#anom", e => e.value = ""); await p.type("#anom", "Dupont"); await p.click("#auth-form button"); await W(600);
+  check("mauvais nom : pas d'information divulguée", !(await txt("#auth-out")).includes("MENGUE"));
+  await login("etat.civil", "agent2026");
   // 3. Usager : suivi + téléchargement du document
   await p.goto(B + "demarches.html#suivi", {waitUntil:"networkidle0"}); await W(800);
   await p.$eval("#ref", e => e.value = ""); await p.$eval("#stel", e => e.value = "");
@@ -64,14 +91,18 @@ const check = (l, ok, i = "") => { console.log((ok ? "OK  " : "ECHEC ") + l, i);
   check("contact envoyé avec PJ", (await txt(".toast")).includes("pièce"));
   await login("arr2", "arr2026"); await p.goto(B + "agents.html#contacts"); await W(800);
   check("arr2 reçoit le message et sa PJ", (await txt("#views")).includes("Message avec PJ") && (await txt("#views")).includes("piece-identite"));
+  // 6a. Tableau de bord de l'arrondissement : mes indicateurs + classement
+  await p.goto(B + "agents.html#tableau"); await W(2500); await shot("v3-tableau-arr2");
+  check("tableau arr2 : mes indicateurs + classement", (await txt("#arrpanel")).includes("/ 4") && (await p.$$eval("#arrpanel canvas", c => c.length)) === 3);
   // 6. Indicateurs d'un maire d'arrondissement
   await p.goto(B + "agents.html#indicateurs"); await W(2500); await shot("v2-indicateurs-arr2");
-  check("indicateurs arrondissement : 8 graphiques", await p.$$eval("canvas", c => c.filter(x => x.width > 0).length) === 8);
+  check("indicateurs arrondissement : 8 graphiques", await p.$$eval(".bo-grid canvas", c => c.filter(x => x.width > 0).length) === 8);
+  check("indicateurs arrondissement : position parmi les 4", (await txt("#rankbox")).includes("/ 4"));
   // 7. Cabinet : indicateurs commune + comparatif + tous modules
   await p.goto(B + "espace.html?role=cabinet&demo=1", {waitUntil:"networkidle0"}); await p.waitForNavigation(); await W(900);
   await p.goto(B + "agents.html#indicateurs"); await W(2500); await shot("v2-indicateurs-maire");
   check("indicateurs maire : graphiques + comparatif", (await p.$$eval("canvas", c => c.length)) === 8 && (await txt("#cmp")).includes("4e arr."));
-  for (const v of ["tableau","demandes","signalements","actes","agenda","recettes","agents","stocks","chantiers","publications","contacts","journal","compte"]) {
+  for (const v of ["tableau","authentifications","demandes","signalements","actes","agenda","recettes","agents","stocks","chantiers","publications","contacts","journal","compte"]) {
     await p.goto(B + "agents.html#" + v); await W(450); check("module " + v, (await txt("#views")).length > 50);
   }
   await p.goto(B + "agents.html#publications"); await W(500); await p.click("#new"); await W(300);

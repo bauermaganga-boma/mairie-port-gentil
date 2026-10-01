@@ -73,6 +73,7 @@ const ICONS = {
   heart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 00-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 000-7.8z"/></svg>',
   stamp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 18h14v-3a3 3 0 00-3-3h-1V8a3 3 0 10-6 0v4H8a3 3 0 00-3 3z"/></svg>',
   gauge:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14l4-4M3.3 19a10 10 0 1117.4 0"/></svg>',
+  shieldok:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>',
   ext:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>',
 };
 
@@ -126,13 +127,14 @@ const CAT_DEM = {
   "mairie": {l:"Le maire & la mairie", c:"#5b3fb3"},
 };
 const DEMARCHES = [
-  {id:"naissance", prix:2000, doc:true, cat:"etat-civil", ic:"baby", t:"Copie ou extrait d'acte de naissance", d:"Obtenir une copie intégrale ou un extrait de votre acte de naissance enregistré à Port-Gentil.", pieces:["Nom, prénoms et date de naissance de la personne concernée","Noms des parents","Pièce d'identité du demandeur"], service:"État civil"},
+  {id:"naissance", acte:"naissance", prix:2000, doc:true, cat:"etat-civil", ic:"baby", t:"Copie ou extrait d'acte de naissance", d:"Obtenir une copie intégrale ou un extrait de votre acte de naissance enregistré à Port-Gentil.", pieces:["Nom, prénoms et date de naissance de la personne concernée","Noms des parents","Pièce d'identité du demandeur"], service:"État civil"},
   {id:"decl-naissance", prix:0, doc:true, cat:"etat-civil", ic:"baby", t:"Déclaration de naissance", d:"Déclarer la naissance d'un enfant auprès de l'officier d'état civil de votre arrondissement.", pieces:["Certificat d'accouchement délivré par la maternité","Pièces d'identité des parents","Livret de famille ou acte de mariage, le cas échéant"], service:"État civil"},
-  {id:"deces", prix:2000, doc:true, cat:"etat-civil", ic:"file", t:"Acte de décès", d:"Déclarer un décès ou obtenir une copie d'acte de décès.", pieces:["Certificat médical de décès","Pièce d'identité du défunt","Pièce d'identité du déclarant"], service:"État civil"},
-  {id:"copie-mariage", prix:2000, doc:true, cat:"etat-civil", ic:"ring", t:"Copie d'acte de mariage", d:"Obtenir une copie de votre acte de mariage célébré à Port-Gentil.", pieces:["Noms des époux et date du mariage","Pièce d'identité du demandeur"], service:"État civil"},
-  {id:"legalisation", prix:1000, doc:false, cat:"etat-civil", ic:"stamp", t:"Légalisation & copie conforme", d:"Faire légaliser une signature ou certifier conforme la copie d'un document original.", pieces:["Document original","Pièce d'identité du signataire"], service:"État civil"},
-  {id:"residence", prix:2000, doc:true, cat:"etat-civil", ic:"home", t:"Certificat de résidence", d:"Attester de votre domicile sur le territoire de la commune.", pieces:["Pièce d'identité","Justificatif de domicile ou attestation du chef de quartier"], service:"État civil"},
-  {id:"mariage", prix:20000, doc:false, cat:"famille", ic:"ring", t:"Dossier de mariage civil", d:"Déposer un dossier de mariage, fixer la date de célébration et la publication des bans.", pieces:["Actes de naissance des futurs époux","Pièces d'identité des époux et des témoins","Certificats de résidence","Certificat de célibat ou de non-remariage"], service:"État civil"},
+  {id:"deces", acte:"deces", prix:2000, doc:true, cat:"etat-civil", ic:"file", t:"Acte de décès", d:"Déclarer un décès ou obtenir une copie d'acte de décès.", pieces:["Certificat médical de décès","Pièce d'identité du défunt","Pièce d'identité du déclarant"], service:"État civil"},
+  {id:"copie-mariage", acte:"mariage", prix:2000, doc:true, cat:"etat-civil", ic:"ring", t:"Copie d'acte de mariage", d:"Obtenir une copie de votre acte de mariage célébré à Port-Gentil.", pieces:["Noms des époux et date du mariage","Pièce d'identité du demandeur"], service:"État civil"},
+  {id:"legalisation", acte:"tout", prix:1000, doc:false, cat:"etat-civil", ic:"stamp", t:"Légalisation & copie conforme", d:"Faire légaliser une signature ou certifier conforme la copie d'un document original.", pieces:["Document original","Pièce d'identité du signataire"], service:"État civil"},
+  {id:"duplicata", acte:"tout", prix:2000, doc:false, cat:"etat-civil", ic:"file", t:"Duplicata ou renouvellement", d:"Obtenir un duplicata ou le renouvellement d'un document déjà délivré (acte, certificat, autorisation) : 100 % en ligne si le document est authentifié, retrait à la mairie.", pieces:["Numéro du document","Pièce d'identité au retrait"], service:"État civil"},
+  {id:"residence", acte:"naissance", prix:2000, doc:true, cat:"etat-civil", ic:"home", t:"Certificat de résidence", d:"Attester de votre domicile sur le territoire de la commune.", pieces:["Pièce d'identité","Justificatif de domicile ou attestation du chef de quartier"], service:"État civil"},
+  {id:"mariage", acte:"naissance", prix:20000, doc:false, cat:"famille", ic:"ring", t:"Dossier de mariage civil", d:"Déposer un dossier de mariage, fixer la date de célébration et la publication des bans.", pieces:["Actes de naissance des futurs époux","Pièces d'identité des époux et des témoins","Certificats de résidence","Certificat de célibat ou de non-remariage"], service:"État civil"},
   {id:"permis", prix:50000, doc:true, cat:"urbanisme", ic:"building", t:"Permis de construire", d:"Demander l'autorisation de construire, d'agrandir ou de modifier un bâtiment.", pieces:["Titre foncier ou attestation d'attribution du terrain","Plans du projet (situation, masse, façades)","Pièce d'identité du demandeur"], service:"Urbanisme"},
   {id:"domaine", prix:10000, doc:true, cat:"urbanisme", ic:"map", t:"Occupation du domaine public", d:"Kiosque, étal, terrasse, dépôt de matériaux : demander une autorisation d'occupation temporaire.", pieces:["Description et emplacement souhaité","Durée d'occupation","Pièce d'identité ou registre de commerce"], service:"Domaine public"},
   {id:"place", prix:5000, doc:true, cat:"urbanisme", ic:"wallet", t:"Emplacement au marché", d:"Demander une place dans un marché municipal (Grand Village, Camp Boiro…).", pieces:["Activité exercée","Pièce d'identité","Registre de commerce, le cas échéant"], service:"Domaine public"},
@@ -140,6 +142,13 @@ const DEMARCHES = [
   {id:"audience", prix:0, doc:false, cat:"mairie", ic:"cal", t:"Demande d'audience", d:"Solliciter un rendez-vous avec le maire, un adjoint ou un maire d'arrondissement.", pieces:["Objet de la demande","Vos coordonnées"], service:"Cabinet du maire"},
 ];
 /* Paiement : tarifs indicatifs (à confirmer par délibération). doc:true = document téléchargeable en ligne une fois prêt. */
+/* Documents de référence authentifiés : l'original est présenté UNE SEULE FOIS au guichet ;
+   ensuite son numéro est reconnu par la plateforme et l'original n'est plus demandé. */
+const TYPES_DOC = [["naissance","Acte de naissance"],["mariage","Acte de mariage"],["deces","Acte de décès"],["residence","Certificat de résidence"],["diplome","Diplôme"],["autre","Autre document officiel"]];
+const typeDocL = k => (TYPES_DOC.find(t => t[0] === k) || [k, "Document"])[1];
+const normNum = s => String(s || "").toUpperCase().replace(/N[°O]\.?\s*/g, "").replace(/\s+/g, "").trim();
+const normNom = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
+
 const PAIEMENT = {
   modes:[
     {id:"airtel", l:"Airtel Money", s:"Paiement depuis votre téléphone", c:"#e40000"},

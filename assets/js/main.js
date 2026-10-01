@@ -37,6 +37,13 @@ function loadScript(src) {
   return _scripts[src] || (_scripts[src] = new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => rej(new Error("Chargement impossible, vérifiez votre connexion.")); document.head.appendChild(s); }));
 }
 
+/* ---------- Documents authentifiés : badge ---------- */
+function acteBadge(a, big) {
+  if (!a) return "";
+  const ok = a.statut === "Authentifié", bad = a.statut === "Rejeté";
+  return `<div class="auth-badge ${ok ? "ok" : bad ? "bad" : "wait"} ${big ? "big" : ""}"><span class="shield">${ok ? ICONS.shieldok : ICONS.shield}</span><span><b>${typeDocL(a.type)} n° ${escH(a.numAff || a.num)} — ${ok ? "Authentifié" : bad ? "Non conforme" : "À authentifier"}</b><small>${ok ? `Original vérifié${a.authDate ? " le " + fdate(a.authDate) : ""}${a.source === "registre" ? " (registre numérique de la commune)" : ""} : il ne vous sera plus demandé. Vos duplicatas, renouvellements et légalisations se font en ligne, vous passez seulement récupérer.` : bad ? "Le document présenté n'a pas été reconnu : rapprochez-vous du service de l'état civil." : "Première fois : présentez l'original UNE SEULE FOIS au guichet. Ensuite, ce numéro sera reconnu pour toutes vos démarches."}</small></span></div>`;
+}
+
 /* ---------- Pièces jointes : photos compressées, PDF limités ---------- */
 const PJ_MAX = 3, PDF_MAX = 900 * 1024;
 const fileToDataURL = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
@@ -122,8 +129,9 @@ async function downloadDocument(r) {
     place:`Le maire de la commune de Port-Gentil attribue à ${ben} un emplacement dans un marché municipal, dans les conditions fixées par le règlement des marchés.`,
   }[r.typeId] || `Délivré à ${ben}, conformément aux mentions portées au registre d'état civil de la commune de Port-Gentil.`;
   doc.setFontSize(11); doc.setTextColor(15, 28, 51); doc.text(doc.splitTextToSize(intro, 160), 25, 76);
-  pdfRows(doc, 100, [["Bénéficiaire", ben], ["Quartier", r.quartier || "—"], ["Arrondissement", arrL(r.arr)], ["N° de dossier", r.ref], ["Demande déposée le", fdate(r.date)], ["Délivré le", fdate((r.document && r.document.date) || new Date())], ["Code de vérification", verifCode(r.ref)]]);
-  doc.setFontSize(10); doc.text(`Fait à Port-Gentil, le ${fdate((r.document && r.document.date) || new Date())}.`, 25, 196);
+  const docNo = "DOC-" + r.ref.replace(/^PG-/, "");
+  pdfRows(doc, 100, [["N° du document", docNo], ...(r.acte ? [[typeDocL(r.acte.type) + " n°", (r.acte.numAff || r.acte.num) + (r.acte.statut === "Authentifié" ? "  (authentifié)" : "")]] : []), ["Bénéficiaire", ben], ["Quartier", r.quartier || "—"], ["Arrondissement", arrL(r.arr)], ["N° de dossier", r.ref], ["Demande déposée le", fdate(r.date)], ["Délivré le", fdate((r.document && r.document.date) || new Date())], ["Code de vérification", verifCode(r.ref)]]);
+  doc.setFontSize(10); doc.text(`Fait à Port-Gentil, le ${fdate((r.document && r.document.date) || new Date())}.`, 25, 206);
   pdfFoot(doc, verifCode(r.ref));
   doc.save(`${titre.toLowerCase().replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "")}-${r.ref}.pdf`);
 }
@@ -275,7 +283,7 @@ function demCard(d) {
   const c = CAT_DEM[d.cat];
   return `<article class="fcard dcard rv" data-cat="${d.cat}" style="--c:${c.c}"><span class="tag" style="background:color-mix(in srgb,${c.c} 12%,#fff);color:${c.c}">${c.l}</span>
     <div class="ic">${ICONS[d.ic]}</div><h3>${d.t}</h3><p>${d.d}</p>
-    <div class="dmeta"><span class="price ${d.prix ? "" : "free"}">${fcfa(d.prix)}</span>${d.doc ? `<span class="dl">${ICONS.dl} Téléchargeable</span>` : ""}</div>
+    <div class="dmeta"><span class="price ${d.prix ? "" : "free"}">${fcfa(d.prix)}</span>${d.doc ? `<span class="dl">${ICONS.dl} Téléchargeable</span>` : ""}</div>${d.acte ? `<p class="dauth">${ICONS.shieldok}<span>100 % en ligne si votre acte est authentifié</span></p>` : ""}
     <div class="dact"><button class="more" data-dem="${d.id}">Pièces à prévoir</button><a class="btn btn-orange btn-sm" href="demarches.html?d=${d.id}#demande">${d.signal ? "Signaler" : "Faire la demande"}</a></div></article>`;
 }
 function initDemarches() {
@@ -313,8 +321,24 @@ function initDemandeForm() {
   qList.innerHTML = QUARTIERS.map(q => `<option value="${q}">`).join("");
   bindFileList($("#pj", form), $("#pj-list", form));
   const cur = () => DEMARCHES.find(x => x.id === sel.value);
+  const af = $("#acte-fields", form), ta = $("#typeActe", form);
+  if (ta) ta.innerHTML = TYPES_DOC.map(([k, l]) => `<option value="${k}">${l}</option>`).join("");
+  const verif = async () => {
+    const d = cur(), res = $("#acte-res", form), num = $("#numActe", form).value, nom = $("#nomActe", form).value || $("#nom", form).value;
+    if (!num.trim()) { res.innerHTML = ""; return null; }
+    const type = d.acte === "tout" ? ta.value : d.acte;
+    res.innerHTML = '<p class="empty" style="padding:.6rem">Vérification…</p>';
+    let a = null; try { a = await Store.verifDoc(num, nom, type); } catch (e) {}
+    res.innerHTML = a ? acteBadge({...a, num}) : acteBadge({numAff:num, type, statut:"En attente"}) + '<small class="imgnote">Numéro pas encore connu de la plateforme : il sera inscrit avec votre demande.</small>';
+    return a;
+  };
+  if (af) { $("#verif", form).onclick = verif; $("#numActe", form).addEventListener("change", verif); }
   const sync = () => {
     const d = cur(), isSig = !!(d && d.signal);
+    if (af) {
+      af.hidden = !(d && d.acte); $("#numActe", form).required = !!(d && d.acte); $("#acte-res", form).innerHTML = "";
+      if (d && d.acte) { $("#ta-field", form).hidden = d.acte !== "tout"; $("#acte-label", form).textContent = d.acte === "tout" ? "Numéro du document" : "Numéro de votre " + typeDocL(d.acte).toLowerCase(); }
+    }
     sig.hidden = !isSig; std.hidden = isSig;
     $$("input,select,textarea", sig).forEach(i => i.required = isSig && i.dataset.req === "1");
     $("#dem-info").innerHTML = d ? `<b>${d.t}</b> — ${d.d}<br><small>À prévoir : ${d.pieces.join(" · ")}</small><div class="dmeta" style="margin-top:.6rem"><span class="price ${d.prix ? "" : "free"}">${fcfa(d.prix)}</span>${d.doc ? `<span class="dl">${ICONS.dl} Document téléchargeable en PDF</span>` : ""}</div>` : "";
@@ -350,10 +374,11 @@ function initDemandeForm() {
         const t = TYPES_SIGNAL.find(x => x[0] === f.sigtype);
         ref = await Store.submitSignalement({type:f.sigtype, typeLabel:t[1], arr:+f.arr, quartier:f.quartier, lieu:f.lieu, description:f.description, prenom:f.prenom, nom:f.nom, tel:f.tel, priorite:"Normale", pj});
       } else {
-        ref = await Store.submitDemande({type:d.id, typeLabel:d.t, service:d.service, arr:+f.arr, prenom:f.prenom, nom:f.nom, tel:f.tel, email:f.email, quartier:f.quartier, details:f.details, montant:d.prix || 0, paiement:d.prix ? {choix:online ? "en ligne" : "guichet", statut:"À régler"} : {statut:"Gratuit"}, pj, document:null});
+        ref = await Store.submitDemande({...(d.acte && f.numActe ? {numActe:f.numActe, nomActe:f.nomActe || f.nom, typeActe:d.acte === "tout" ? f.typeActe : d.acte} : {}), type:d.id, typeLabel:d.t, service:d.service, arr:+f.arr, prenom:f.prenom, nom:f.nom, tel:f.tel, email:f.email, quartier:f.quartier, details:f.details, montant:d.prix || 0, paiement:d.prix ? {choix:online ? "en ligne" : "guichet", statut:"À régler"} : {statut:"Gratuit"}, pj, document:null});
       }
     } catch (err) { reset(); return toast("Envoi impossible : " + err.message, "err"); }
     reset(); ss("pog_suivi", JSON.stringify({ref, tel:f.tel}));
+    const sent = d.acte && f.numActe ? await Store.suivi(ref, f.tel) : null;
     form.reset(); sel.value = ""; $("#pj-list").innerHTML = ""; sync(); show(0);
     if (online) {
       const r = await Store.suivi(ref, f.tel);
@@ -363,6 +388,7 @@ function initDemandeForm() {
     }
     modal(d.signal ? "Signalement transmis ✅" : "Demande enregistrée ✅", `<p class="lead-p">Merci <b>${escH(f.prenom)}</b> ! ${d.signal ? "Votre signalement a été transmis aux services techniques." : `Votre demande « <b>${d.t}</b> » a été transmise au service ${d.service} (${arrL(f.arr)}).`}${pj.length ? ` ${pj.length} pièce(s) jointe(s) reçue(s).` : ""}</p>
       <div class="panel" style="margin:1.2rem 0;box-shadow:none;text-align:center"><small style="color:var(--muted)">Votre numéro de dossier</small><div class="refbig">${ref}</div><small style="color:var(--muted)">Notez-le avec votre numéro de téléphone : ils vous permettent de suivre${d.prix ? ", payer" : ""} et télécharger.</small></div>
+      ${sent && sent.acte ? acteBadge(sent.acte) : ""}
       ${d.prix ? `<p class="alert-box warn">${ICONS.wallet}<span>Montant à régler : <b>${fcfa(d.prix)}</b> — à la mairie, ou en ligne à tout moment depuis le suivi.</span></p>` : ""}
       <a class="btn btn-navy" href="demarches.html#suivi" id="gos">${ICONS.search} Suivre mon dossier</a>`);
     $("#gos").onclick = () => { closeModal(); setTimeout(() => window.__suivi && window.__suivi(ref), 50); };
@@ -387,7 +413,7 @@ function initSuivi() {
       else if (!/Rejet/.test(r.statut)) docBox = `<div class="sbox"><div><b>${ICONS.clock} Document en préparation</b><small>Il sera téléchargeable ici dès que le service l'aura validé.</small></div></div>`;
     } else if (/Prête/.test(r.statut)) docBox = `<div class="sbox"><div><b>${ICONS.building} À retirer au guichet</b><small>Présentez-vous avec votre pièce d'identité et votre numéro de dossier.</small></div></div>`;
     out.innerHTML = `<div class="suivi-card"><div class="sh"><div><small>Dossier ${r.ref} · ${arrL(r.arr)}</small><h3>${escH(r.type)}</h3><small>Déposé le ${fdate(r.date)} par ${escH(r.prenom)} ${escH(r.nom)}</small></div><span class="chip ${done ? "ok" : bad ? "warn" : "info"}">${r.statut}</span></div>
-      ${payBox}${docBox}
+      ${r.acte ? acteBadge(r.acte) : ""}${payBox}${docBox}
       <h4 style="color:var(--navy);margin:1.4rem 0 1rem">Historique</h4>
       <div class="timeline">${r.historique.slice().reverse().map(h => `<div class="tl"><b>${fdate(h.date)}</b><h4>${h.statut}</h4><p>${escH(h.note)}</p></div>`).join("")}</div></div>`;
     $$("[data-pay]", out).forEach(b => b.onclick = async () => { const tel = form.tel.value; setTimeout(() => $$(".paytab").find(x => x.dataset.m === b.dataset.pay)?.click(), 30); const res = await payFlow(r, tel); paidModal(res); render(res); });
@@ -440,6 +466,19 @@ function initArr() {
   const h = +(location.hash.match(/arr(\d)/) || [])[1];
   set(h >= 1 && h <= 4 ? h : 1);
   if (h) setTimeout(() => $("#focus-sec").scrollIntoView(), 300);
+}
+
+/* ---------- Vérifier un document authentifié ---------- */
+function initAuthCheck() {
+  const form = $("#auth-form"); if (!form) return;
+  $("[name=type]", form).innerHTML = TYPES_DOC.map(([k, l]) => `<option value="${k}">${l}</option>`).join("");
+  form.addEventListener("submit", async e => {
+    e.preventDefault(); const out = $("#auth-out");
+    out.innerHTML = '<p class="empty">Vérification…</p>';
+    let a = null; try { a = await Store.verifDoc(form.num.value, form.nom.value, form.type.value); } catch (err) {}
+    out.innerHTML = a ? acteBadge(a, true) + `<p class="imgnote" style="margin-top:.6rem">Titulaire : <b>${escH(a.titulaire)}</b></p>`
+      : `<div class="auth-badge wait big"><span class="shield">${ICONS.shield}</span><span><b>Numéro non encore authentifié</b><small>Faites votre prochaine démarche en ligne en indiquant ce numéro, puis présentez l'original une seule fois au guichet de votre mairie d'arrondissement.</small></span></div>`;
+  });
 }
 
 /* ---------- Projets ---------- */
@@ -555,6 +594,6 @@ function initContact() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  renderChrome(); initChrome(); initHero(); initDemarches(); initDemandeForm(); initSuivi(); initProjets(); initNews(); initGallery(); initArr(); initAccess(); initContact();
+  renderChrome(); initChrome(); initHero(); initDemarches(); initDemandeForm(); initSuivi(); initAuthCheck(); initProjets(); initNews(); initGallery(); initArr(); initAccess(); initContact();
   initReveal(); initAvis();
 });
