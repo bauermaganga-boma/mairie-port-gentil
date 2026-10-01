@@ -27,7 +27,7 @@ Module **Indicateurs** (maire central, secrétariat, finances, maires d'arrondis
 Les personnes, montants et dossiers de démonstration sont **fictifs**. Le paiement est **simulé** : en production, il passe par un prestataire agréé (Airtel Money, agrégateur, banque) dont le webhook appelle `pay_public`.
 
 ## Documents authentifiés
-Chaque acte ou document officiel a un numéro. L'original est vérifié **une seule fois** au guichet (module « Actes authentifiés » du back-office) ; ensuite la plateforme reconnaît le numéro (badge 🛡 « Authentifié ») et ne redemande plus l'original : copies, duplicatas, renouvellements et légalisations se font en ligne, l'usager passe seulement récupérer. Les actes du registre numérique de la commune sont authentiques d'office. Vérification publique : numéro + nom (rubrique Démarches). Démo :  / Mengue (authentifié),  / Ogoula (à authentifier).
+Chaque acte ou document officiel a un numéro. L'original est vérifié **une seule fois** au guichet (module « Actes authentifiés » du back-office) ; ensuite la plateforme reconnaît le numéro (badge 🛡 « Authentifié ») et ne redemande plus l'original : copies, duplicatas, renouvellements et légalisations se font en ligne, l'usager passe seulement récupérer. Les actes du registre numérique de la commune sont authentiques d'office. Vérification publique : numéro + nom (rubrique Démarches). Démo : `0312/2004` / Mengue (authentifié), `1187/1998` / Ogoula (à authentifier).
 
 Chaque mairie d'arrondissement voit sur son tableau de bord ses indicateurs (graphiques) et sa position parmi les 4 (classement, moyenne de la commune).
 
