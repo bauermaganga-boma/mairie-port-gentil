@@ -31,6 +31,7 @@ const P = (() => {
   const filterBar = (fields, onChange, root) => { root.querySelectorAll("[data-f]").forEach(i => i.addEventListener(i.tagName === "INPUT" ? "input" : "change", onChange)); };
 
   let me, NAV, VIEWS, cur, route;
+  const charts = [];
   const F = {}; // filtres mémorisés par module
 
   async function boot() {
@@ -66,6 +67,7 @@ const P = (() => {
       cur = NAV.some(n => n.id === id) ? id : NAV[0].id;
       const n = NAV.find(x => x.id === cur), y = scrollY;
       document.getElementById("vt").textContent = n.l; document.getElementById("vs").textContent = n.s || "";
+      while (charts.length) charts.pop().destroy();
       document.getElementById("views").innerHTML = `<div class="view on" id="v-${cur}"></div>`;
       VIEWS[cur](document.getElementById("v-" + cur));
       draw(); sb.classList.remove("open"); scrollTo(0, top ? 0 : y);
@@ -87,6 +89,7 @@ const P = (() => {
 
     const ALL = [
       {id:"tableau", l:"Tableau de bord", ic:"gauge", s:"Vue d'ensemble en temps réel"},
+      {id:"indicateurs", l:"Indicateurs", ic:"chart", s:"Camemberts et courbes de pilotage — maire central et maires d'arrondissement"},
       {id:"demandes", l:"Demandes", ic:"inbox", s:"Démarches reçues en ligne et au guichet", badge:() => L("demandes").filter(d => d.statut === "Nouvelle").length},
       {id:"signalements", l:"Signalements", ic:"alert", s:"Problèmes signalés par les habitants", badge:() => L("signalements").filter(d => d.statut === "Nouveau").length},
       {id:"actes", l:"Registre d'état civil", ic:"book", s:"Naissances, mariages et décès enregistrés numériquement"},
@@ -96,12 +99,12 @@ const P = (() => {
       {id:"stocks", l:"Stocks", ic:"box", s:"Fournitures sensibles avec alertes automatiques", badge:() => lowStocks().length},
       {id:"chantiers", l:"Chantiers", ic:"crane", s:"Suivi des projets, budgets et avancement"},
       {id:"publications", l:"Publications du site", ic:"mega", s:"Avis, communiqués, marchés publics et recrutements affichés sur le site"},
-      {id:"contacts", l:"Messages du site", ic:"mail", s:"Formulaire de contact", badge:() => Store.db().contacts.filter(c => !c.lu).length},
+      {id:"contacts", l:"Messages reçus", ic:"mail", s:"Messages et pièces jointes envoyés depuis le site", badge:() => Store.list("contacts").filter(c => !c.lu).length},
       {id:"journal", l:"Journal d'activité", ic:"clock", s:"Traçabilité : qui a fait quoi, et quand"},
       {id:"comptes", l:"Comptes agents", ic:"lock", s:"Créer et gérer les accès par service et par arrondissement"},
       {id:"compte", l:"Mon compte", ic:"edit", s:"Profil et mot de passe"},
     ];
-    NAV = ALL.filter(n => n.id === "comptes" ? me.role === "sg" : n.id === "contacts" ? Store.ROLES[me.role].mods === "*" : Store.can(n.id));
+    NAV = ALL.filter(n => n.id === "comptes" ? me.role === "sg" : Store.can(n.id));
 
     VIEWS = {
       /* ---------------- Tableau de bord ---------------- */
@@ -121,7 +124,7 @@ const P = (() => {
         if (Store.can("stocks")) lowStocks().forEach(s => alerts.push(["bad", `Stock bas : <b>${esc(s.article)}</b> — ${s.qte} ${s.unite}(s) restant(s), seuil ${s.seuil} (${arrL(s.arr)}).`]));
         if (Store.can("demandes") && late.length) alerts.push(["warn", `<b>${late.length} demande(s)</b> en attente depuis plus de 7 jours.`]);
         if (Store.can("signalements") && hot.length) alerts.push(["warn", `<b>${hot.length} signalement(s) prioritaire(s)</b> non résolu(s) (canaux, voirie).`]);
-        const months = [...Array(6)].map((_, i) => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 5 + i); return d; });
+        const off = new Date().getDate() <= 7 ? 1 : 0, months = [...Array(6)].map((_, i) => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 5 + i - off); return d; });
         const recByM = months.map(m => [m.toLocaleDateString("fr-FR", {month:"short"}), rec.filter(r => { const d = new Date(r.date); return d.getMonth() === m.getMonth() && d.getFullYear() === m.getFullYear(); }).reduce((a, r) => a + r.montant, 0)]);
         const byArr = [1,2,3,4].map(a => [arrL(a), dem.filter(d => +d.arr === a).length + sig.filter(s => +s.arr === a).length]);
         const journal = Store.list("journal").slice(0, 7);
@@ -136,6 +139,86 @@ const P = (() => {
             ${Store.can("agenda") ? `<div class="card"><h2>Prochains rendez-vous <a class="btn btn-line btn-sm" href="#agenda">Agenda</a></h2>${calList(L("agenda").filter(e => new Date(e.date) > Date.now() - 864e5).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 4))}</div>` : ""}
             ${Store.can("journal") || Store.ROLES[me.role].mods === "*" ? `<div class="card"><h2>Activité récente <a class="btn btn-line btn-sm" href="#journal">Journal</a></h2>${journal.length ? `<div class="hist">${journal.map(j => `<div><small>${ago(j.date)} · ${esc(j.user)}</small><b>${esc(j.action)}</b> — ${esc(j.detail)}</div>`).join("")}</div>` : empty("Aucune activité")}</div>` : ""}
           </div>`;
+      },
+
+      /* ---------------- Indicateurs de gestion (camemberts & courbes) ---------------- */
+      indicateurs(el) {
+        const f = F.ind || (F.ind = {per:6, arr:me.arr ? String(me.arr) : "0"});
+        const A = me.arr ? me.arr : +f.arr;
+        const off = new Date().getDate() <= 7 ? 1 : 0; // mois en cours trop récent : on s'arrête au dernier mois complet
+        const months = [...Array(f.per)].map((_, i) => { const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); d.setMonth(d.getMonth() - f.per + 1 + i - off); return d; });
+        const from = months[0].getTime(), inPer = x => new Date(x.date).getTime() >= from;
+        const sameM = (d, m) => { d = new Date(d); return d.getMonth() === m.getMonth() && d.getFullYear() === m.getFullYear(); };
+        const mLabel = m => m.toLocaleDateString("fr-FR", {month:"short"}) + (f.per > 6 ? " " + String(m.getFullYear()).slice(2) : "");
+        const all = c => Store.db()[c].filter(x => !A || +x.arr === A);
+        const allArr = (c, a) => Store.db()[c].filter(x => +x.arr === a);
+        const doneAt = d => { const h = (d.historique || []).find(x => /Prête|Remise|Rejetée|Résolu/.test(x.statut)); return h ? h.date : null; };
+        const delay = list => { const v = list.map(d => { const t = doneAt(d); return t ? (new Date(t) - new Date(d.date)) / 864e5 : null; }).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+        const stats = a => {
+          const dem = (a == null ? all("demandes") : allArr("demandes", a)).filter(inPer), sig = (a == null ? all("signalements") : allArr("signalements", a)).filter(inPer), rec = (a == null ? all("recettes") : allArr("recettes", a)).filter(inPer), ch = a == null ? all("chantiers") : allArr("chantiers", a);
+          const tot = rec.reduce((s, r) => s + r.montant, 0), onl = rec.filter(r => /Airtel|Carte/.test(r.mode)).reduce((s, r) => s + r.montant, 0);
+          return {dem, sig, rec, ch, nDem:dem.length, traitees:dem.length ? dem.filter(d => doneAt(d)).length / dem.length * 100 : 0, delai:delay(dem), recettes:tot, online:tot ? onl / tot * 100 : 0,
+            resolus:sig.length ? sig.filter(s => s.statut === "Résolu").length / sig.length * 100 : 0, avct:ch.length ? ch.reduce((s, c) => s + c.avancement, 0) / ch.length : 0, engage:ch.reduce((s, c) => s + c.engage, 0)};
+        };
+        const S = stats(null), one = n => n == null ? "—" : n.toFixed(1).replace(".", ",");
+        const scopeTitle = A ? arrL(A).replace("arr.", "arrondissement") : "Toute la commune";
+        el.innerHTML = `<div class="card ind-bar"><div class="toolbar" style="margin:0">
+            <div class="field"><label>Période</label><select data-f="per">${opt([["3","3 derniers mois"],["6","6 derniers mois"],["12","12 derniers mois"]], f.per)}</select></div>
+            ${me.arr ? `<div class="field"><label>Périmètre</label><input value="${esc(scopeTitle)}" disabled></div>` : `<div class="field"><label>Périmètre</label><select data-f="arr">${opt([["0","Toute la commune (maire central)"], ...ARR_OPTS.slice(1).map(([v, l]) => [v, "Mairie du " + l])], f.arr)}</select></div>`}
+            <div class="field" style="flex:0 0 auto"><label>&nbsp;</label><button class="btn btn-line btn-sm" id="pdfind" style="height:42px">${ICONS.print} Imprimer</button></div></div></div>` +
+          kpis([["inbox","ic-b", S.nDem, "demandes reçues"],["clock","ic-y", one(S.delai) + " j", "délai moyen de traitement"],["check","ic-g", Math.round(S.traitees) + " %", "demandes traitées"],["wallet","ic-g", mshort(S.recettes), "FCFA encaissés"]]) +
+          kpis([["phone","ic-o", Math.round(S.online) + " %", "des recettes payées en ligne"],["alert","ic-o", S.sig.length, "signalements reçus"],["wave","ic-b", Math.round(S.resolus) + " %", "signalements résolus"],["crane","ic-y", Math.round(S.avct) + " %", "avancement moyen des chantiers"]]) +
+          `<div class="bo-grid">
+            <div class="card"><h2>Demandes reçues et traitées par mois</h2><div class="chart"><canvas id="c1"></canvas></div></div>
+            <div class="card"><h2>${A ? "Recettes mensuelles" : "Recettes mensuelles par arrondissement"}</h2><div class="chart"><canvas id="c2"></canvas></div></div>
+            <div class="card"><h2>Demandes par statut</h2><div class="chart pie"><canvas id="c3"></canvas></div></div>
+            <div class="card"><h2>Recettes par moyen de paiement</h2><div class="chart pie"><canvas id="c4"></canvas></div></div>
+            <div class="card"><h2>Recettes par nature</h2><div class="chart pie"><canvas id="c5"></canvas></div></div>
+            <div class="card"><h2>Signalements par type</h2><div class="chart pie"><canvas id="c6"></canvas></div></div>
+            <div class="card"><h2>${A ? "Délai moyen par démarche (jours)" : "Délai moyen de traitement par arrondissement (jours)"}</h2><div class="chart"><canvas id="c7"></canvas></div></div>
+            <div class="card"><h2>Dotation 2026 engagée ${A ? "" : "par arrondissement"}</h2><div class="chart ${A ? "pie" : ""}"><canvas id="c8"></canvas></div></div>
+          </div>
+          ${A ? "" : `<div class="card"><h2>Tableau comparatif des arrondissements <button class="btn btn-line btn-sm" id="expind">${ICONS.dl} Export</button></h2><div id="cmp"></div><p style="color:var(--muted);font-size:.8rem;margin-top:.6rem">En vert : meilleur résultat de la période. Données de démonstration fictives.</p></div>`}`;
+        filterBar(null, e => { f[e.target.dataset.f] = e.target.dataset.f === "per" ? +e.target.value : e.target.value; route(false); }, el);
+        el.querySelector("#pdfind").onclick = () => print();
+        // Tableau comparatif
+        if (!A) {
+          const rows = [1,2,3,4].map(a => ({a, ...stats(a)}));
+          const best = (k, low) => { const v = rows.map(r => r[k]).filter(x => x != null); return low ? Math.min(...v) : Math.max(...v); };
+          const cell = (r, k, txt, low) => `<td class="${r[k] != null && r[k] === best(k, low) ? "best" : ""}">${txt}</td>`;
+          el.querySelector("#cmp").innerHTML = tbl(["Arrondissement","Demandes","Délai moyen","Traitées","Recettes","Payé en ligne","Signalements résolus","Chantiers (avct)","Dotation engagée"], rows.map(r => `<tr><td><b>Mairie du ${arrL(r.a).replace("arr.", "arr.")}</b></td>${cell(r, "nDem", r.nDem)}${cell(r, "delai", one(r.delai) + " j", true)}${cell(r, "traitees", Math.round(r.traitees) + " %")}${cell(r, "recettes", mshort(r.recettes))}${cell(r, "online", Math.round(r.online) + " %")}${cell(r, "resolus", Math.round(r.resolus) + " %")}${cell(r, "avct", Math.round(r.avct) + " %")}<td>${mshort(r.engage)} / 250 M</td></tr>`));
+          el.querySelector("#expind").onclick = () => csv("indicateurs-arrondissements", ["Arrondissement","Demandes","Délai moyen (j)","Traitées %","Recettes FCFA","Payé en ligne %","Signalements résolus %","Avancement chantiers %","Dotation engagée FCFA"], rows.map(r => [arrL(r.a), r.nDem, one(r.delai), Math.round(r.traitees), r.recettes, Math.round(r.online), Math.round(r.resolus), Math.round(r.avct), r.engage]));
+        }
+        // Graphiques
+        loadScript("https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js").then(() => {
+          if (!document.getElementById("c1")) return;
+          const C = window.Chart; C.defaults.font.family = "Inter, system-ui, sans-serif"; C.defaults.color = "#5b6b85"; C.defaults.plugins.legend.labels.boxWidth = 12;
+          const PAL = ["#07325a","#0a8a55","#f2c230","#1477b5","#c0392b","#5b3fb3","#22a2d6","#e67e22"], ARRC = {1:"#1477b5", 2:"#0a8a55", 3:"#f2c230", 4:"#c0392b"};
+          const mk = (id, cfg) => charts.push(new C(document.getElementById(id), {...cfg, options:{maintainAspectRatio:false, responsive:true, ...(cfg.options || {})}}));
+          const pie = (id, labels, data, colors) => mk(id, {type:"doughnut", data:{labels, datasets:[{data, backgroundColor:colors || PAL, borderWidth:2, borderColor:"#fff"}]}, options:{cutout:"55%", plugins:{legend:{position:"right"}, tooltip:{callbacks:{label:c => { const t = c.dataset.data.reduce((a, b) => a + b, 0); return ` ${c.label} : ${c.raw > 9999 ? mshort(c.raw) : c.raw} (${t ? Math.round(c.raw / t * 100) : 0} %)`; }}}}}});
+          const line = (id, sets, money) => mk(id, {type:"line", data:{labels:months.map(mLabel), datasets:sets.map(s => ({tension:.35, fill:sets.length === 1, pointRadius:3, borderWidth:2.5, ...s, backgroundColor:sets.length === 1 ? s.borderColor + "22" : s.borderColor}))}, options:{interaction:{mode:"index", intersect:false}, plugins:{legend:{position:"bottom"}, tooltip:{callbacks:{label:c => ` ${c.dataset.label} : ${money ? mshort(c.raw) + " FCFA" : c.raw}`}}}, scales:{y:{beginAtZero:true, ticks:{callback:v => money ? mshort(v) : v}}, x:{grid:{display:false}}}}});
+          // 1. Demandes reçues / traitées
+          line("c1", [{label:"Reçues", data:months.map(m => S.dem.filter(d => sameM(d.date, m)).length), borderColor:"#1477b5"}, {label:"Traitées", data:months.map(m => all("demandes").filter(d => doneAt(d) && sameM(doneAt(d), m)).length), borderColor:"#0a8a55"}]);
+          // 2. Recettes mensuelles
+          const recM = list => months.map(m => list.filter(r => sameM(r.date, m)).reduce((s, r) => s + r.montant, 0));
+          line("c2", A ? [{label:"Recettes", data:recM(S.rec), borderColor:"#0a8a55"}] : [1,2,3,4].map(a => ({label:arrL(a), data:recM(S.rec.filter(r => +r.arr === a)), borderColor:ARRC[a]})), true);
+          // 3. Demandes par statut
+          const sts = Store.STATUTS.demandes; pie("c3", sts, sts.map(s => S.dem.filter(d => d.statut === s).length), ["#c0392b","#1477b5","#e67e22","#0a8a55","#07325a","#9aa5b8"]);
+          // 4. Moyens de paiement
+          pie("c4", Store.MODES, Store.MODES.map(mo => S.rec.filter(r => r.mode === mo).reduce((s, r) => s + r.montant, 0)), ["#07325a","#e40000","#1477b5","#9aa5b8"]);
+          // 5. Nature des recettes
+          const nat = Store.NATURES.map(n => [n, S.rec.filter(r => r.nature === n).reduce((s, r) => s + r.montant, 0)]).filter(x => x[1]).sort((a, b) => b[1] - a[1]);
+          pie("c5", nat.map(x => x[0]), nat.map(x => x[1]));
+          // 6. Signalements par type
+          pie("c6", TYPES_SIGNAL.map(t => t[1]), TYPES_SIGNAL.map(t => S.sig.filter(s => s.type === t[0]).length), ["#1477b5","#07325a","#f2c230","#e67e22","#c0392b","#9aa5b8"]);
+          // 7. Délais
+          const bar = (id, labels, data, colors, money) => mk(id, {type:"bar", data:{labels, datasets:[{data, backgroundColor:colors, borderRadius:6}]}, options:{plugins:{legend:{display:false}, tooltip:{callbacks:{label:c => " " + (money ? mshort(c.raw) + " FCFA" : one(c.raw) + " jours")}}}, scales:{y:{beginAtZero:true, ticks:{callback:v => money ? mshort(v) : v}}, x:{grid:{display:false}}}}});
+          if (A) { const ty = DEMARCHES.filter(d => !d.signal).map(d => [d.t.replace(/ \(.*\)/, "").slice(0, 22), delay(S.dem.filter(x => x.type === d.id))]).filter(x => x[1] != null); bar("c7", ty.map(x => x[0]), ty.map(x => +x[1].toFixed(1)), "#1477b5"); }
+          else bar("c7", [1,2,3,4].map(arrL), [1,2,3,4].map(a => +(delay(S.dem.filter(d => +d.arr === a)) || 0).toFixed(1)), [1,2,3,4].map(a => ARRC[a]));
+          // 8. Dotation
+          if (A) { const e = Math.min(250e6, S.ch.reduce((s, c) => s + c.engage, 0)); pie("c8", ["Engagé","Disponible"], [e, 250e6 - e], ["#0a8a55","#dfe6ef"]); }
+          else bar("c8", [1,2,3,4].map(arrL), [1,2,3,4].map(a => allArr("chantiers", a).reduce((s, c) => s + c.engage, 0)), [1,2,3,4].map(a => ARRC[a]), true);
+        }).catch(e => toast(e.message, "err"));
       },
 
       /* ---------------- Demandes ---------------- */
@@ -214,10 +297,10 @@ const P = (() => {
         const inPer = r => f.per === "tout" ? true : f.per === "mois" ? thisMonth(r.date) : days(r.date) <= ({"30":30, "90":90, "180":180}[f.per] || 9999);
         const list = all.filter(r => inPer(r) && (!f.nature || r.nature === f.nature) && (!f.arr || String(r.arr) === f.arr)).sort((a, b) => b.date.localeCompare(a.date));
         const tot = list.reduce((a, r) => a + r.montant, 0), yr = all.filter(r => new Date(r.date).getFullYear() === new Date().getFullYear()).reduce((a, r) => a + r.montant, 0);
-        const mm = list.filter(r => r.mode === "Mobile money").reduce((a, r) => a + r.montant, 0);
+        const mm = list.filter(r => /Airtel|Carte/.test(r.mode)).reduce((a, r) => a + r.montant, 0);
         const byNat = Store.NATURES.map(n => [n, list.filter(r => r.nature === n).reduce((a, r) => a + r.montant, 0)]).filter(x => x[1]).sort((a, b) => b[1] - a[1]);
         const byArr = [1,2,3,4].map(a => [arrL(a), list.filter(r => +r.arr === a).reduce((s, r) => s + r.montant, 0)]);
-        el.innerHTML = kpis([["wallet","ic-g", mshort(tot), "FCFA sur la période"],["chart","ic-b", mshort(yr), "FCFA depuis janvier"],["file","ic-y", list.length, "quittances émises"],["phone","ic-o", tot ? Math.round(mm / tot * 100) + " %" : "—", "payé par mobile money"]]) +
+        el.innerHTML = kpis([["wallet","ic-g", mshort(tot), "FCFA sur la période"],["chart","ic-b", mshort(yr), "FCFA depuis janvier"],["file","ic-y", list.length, "quittances émises"],["phone","ic-o", tot ? Math.round(mm / tot * 100) + " %" : "—", "payé en ligne (Airtel, carte)"]]) +
           `<div class="cols"><div class="card"><h2>Encaissements <span class="mini-btns"><button class="btn btn-orange btn-sm" id="new">${ICONS.plus} Nouvel encaissement</button><button class="btn btn-line btn-sm" id="exp">${ICONS.dl} Export</button></span></h2>
             <div class="toolbar"><div class="field"><label>Période</label><select data-f="per">${opt([["mois","Mois en cours"],["30","30 derniers jours"],["90","3 derniers mois"],["180","6 derniers mois"],["tout","Tout"]], f.per)}</select></div><div class="field"><label>Nature</label><select data-f="nature"><option value="">Toutes</option>${opt(Store.NATURES, f.nature)}</select></div>${me.arr ? "" : `<div class="field"><label>Arrondissement</label><select data-f="arr"><option value="">Tous</option>${opt(ARR_OPTS.slice(1), f.arr)}</select></div>`}</div>
             ${tbl(["Quittance","Date","Nature","Payeur","Arr.","Mode","Montant"], list.slice(0, 150).map(r => `<tr class="clk" data-id="${r.id}"><td><b>${r.quittance}</b></td><td>${date(r.date)}</td><td>${esc(r.nature)}</td><td>${esc(r.payeur)}</td><td>${arrL(r.arr)}</td><td>${esc(r.mode)}</td><td style="text-align:right;font-weight:700;white-space:nowrap">${money(r.montant)}</td></tr>`), "Aucun encaissement sur la période")}</div>
@@ -228,7 +311,7 @@ const P = (() => {
         el.querySelector("#new").onclick = () => {
           modal("Nouvel encaissement", `<form class="form" id="rf">
             <div class="row"><div class="field"><label>Nature de la recette</label><select name="nature">${opt(Store.NATURES)}</select></div><div class="field"><label>Arrondissement</label><select name="arr" ${me.arr ? "disabled" : ""}>${opt(ARR_OPTS.slice(1), me.arr || 1)}</select></div></div>
-            <div class="row"><div class="field"><label>Montant (FCFA)</label><input name="montant" type="number" min="100" step="100" required></div><div class="field"><label>Mode de paiement</label><select name="mode">${opt(["Espèces","Mobile money","Virement","Chèque"])}</select></div></div>
+            <div class="row"><div class="field"><label>Montant (FCFA)</label><input name="montant" type="number" min="100" step="100" required></div><div class="field"><label>Mode de paiement</label><select name="mode">${opt(Store.MODES.concat(["Chèque"]))}</select></div></div>
             <div class="field"><label>Payeur (nom ou commerce)</label><input name="payeur" required></div>
             <button class="btn btn-orange">${ICONS.save} Enregistrer et éditer la quittance</button></form>`);
           const fm = document.getElementById("rf");
@@ -362,8 +445,8 @@ const P = (() => {
 
       /* ---------------- Messages du site ---------------- */
       contacts(el) {
-        const list = Store.db().contacts.slice().sort((a, b) => b.date.localeCompare(a.date));
-        el.innerHTML = `<div class="card"><h2>Messages reçus via le formulaire de contact</h2><div class="feed">${list.length ? list.map(c => `<div class="post ${c.lu ? "" : "urgent"}"><div class="top"><h4>${esc(c.sujet)} — ${esc(c.nom)}</h4>${c.lu ? `<span class="chip neu">Lu</span>` : `<span class="chip bad">Nouveau</span>`}</div><p>${esc(c.message)}</p><small>${esc(c.email)}${c.tel ? " · " + esc(c.tel) : ""} · ${ago(c.date)}</small>
+        const list = Store.list("contacts").slice().sort((a, b) => b.date.localeCompare(a.date));
+        el.innerHTML = `<div class="card"><h2>Messages reçus via le site</h2><div class="feed">${list.length ? list.map(c => `<div class="post ${c.lu ? "" : "urgent"}"><div class="top"><h4>${esc(c.sujet)} — ${esc(c.nom)}</h4>${c.lu ? `<span class="chip neu">Lu</span>` : `<span class="chip bad">Nouveau</span>`}</div><p>${esc(c.message)}</p>${(c.pj || []).length ? `<div class="pjlist" style="margin:.4rem 0">${c.pj.map(x => `<a class="pjchip" href="${x.data}" download="${esc(x.nom)}" target="_blank">${ICONS.file}${esc(x.nom)} <small>${x.taille || ""} Ko</small></a>`).join("")}</div>` : ""}<small>À : ${+c.arr ? "Mairie du " + arrL(c.arr) : "Mairie centrale"} · ${esc(c.email)}${c.tel ? " · " + esc(c.tel) : ""} · ${ago(c.date)}</small>
           <div class="mini-btns" style="margin-top:.5rem">${c.email ? `<a class="btn btn-navy btn-sm" href="mailto:${esc(c.email)}?subject=${encodeURIComponent("Re : " + c.sujet)}">${ICONS.mail} Répondre</a>` : ""}${c.lu ? "" : `<button class="btn btn-line btn-sm" data-lu="${c.id}">Marquer comme lu</button>`}<button class="btn btn-line btn-sm" data-del="${c.id}">Supprimer</button></div></div>`).join("") : empty("Aucun message", "mail")}</div></div>`;
         el.querySelectorAll("[data-lu]").forEach(b => b.onclick = async () => { if (await act(() => Store.update("contacts", b.dataset.lu, {lu:true}))) refresh(); });
         el.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => { if (confirm("Supprimer ce message ?") && await act(() => Store.remove("contacts", b.dataset.del), "Message supprimé.")) refresh(); });
@@ -428,10 +511,10 @@ const P = (() => {
     const draw = () => {
       const list = all.filter(d => (f.statut === "ouverts" ? !/Remise|Rejetée|Résolu/.test(d.statut) : !f.statut || d.statut === f.statut) && (!f.arr || String(d.arr) === f.arr) && (!f.type || d.type === f.type) && (!f.q || (d.ref + " " + d.nom + " " + d.prenom + " " + (d.quartier || "")).toLowerCase().includes(f.q.toLowerCase())))
         .sort((a, b) => b.date.localeCompare(a.date));
-      el.querySelector("#list").innerHTML = tbl(isD ? ["Dossier","Demandeur","Démarche","Arr.","Déposé","Statut"] : ["Réf.","Problème","Lieu","Arr.","Priorité","Signalé","Statut"],
+      el.querySelector("#list").innerHTML = tbl(isD ? ["Dossier","Demandeur","Démarche","Arr.","Déposé","Paiement","Statut"] : ["Réf.","Problème","Lieu","Arr.","Priorité","Signalé","Statut"],
         list.map(d => isD
-          ? `<tr class="clk" data-id="${d.id}"><td><b>${d.ref}</b></td><td>${esc(d.prenom)} ${esc(d.nom)}<br><small style="color:var(--muted)">${esc(d.tel)}</small></td><td>${esc(d.typeLabel)}</td><td>${arrL(d.arr)}</td><td style="white-space:nowrap">${date(d.date)}${open(d.statut) && days(d.date) > 7 ? ` <span class="chip warn">+7 j</span>` : ""}</td><td>${stChip(d.statut)}</td></tr>`
-          : `<tr class="clk" data-id="${d.id}"><td><b>${d.ref}</b></td><td>${esc(d.typeLabel)}</td><td>${esc(d.quartier)}<br><small style="color:var(--muted)">${esc(d.lieu || "")}</small></td><td>${arrL(d.arr)}</td><td>${d.priorite === "Haute" ? `<span class="chip bad">Haute</span>` : `<span class="chip neu">Normale</span>`}</td><td style="white-space:nowrap">${ago(d.date)}</td><td>${stChip(d.statut)}</td></tr>`), "Aucun dossier ne correspond aux filtres");
+          ? `<tr class="clk" data-id="${d.id}"><td><b>${d.ref}</b></td><td>${esc(d.prenom)} ${esc(d.nom)}<br><small style="color:var(--muted)">${esc(d.tel)}</small></td><td>${esc(d.typeLabel)}</td><td>${arrL(d.arr)}</td><td style="white-space:nowrap">${date(d.date)}${open(d.statut) && days(d.date) > 7 ? ` <span class="chip warn">+7 j</span>` : ""}</td><td>${payChip(d)}${(d.pj || []).length ? ` <span class="chip neu" title="Pièces jointes">📎 ${d.pj.length}</span>` : ""}</td><td>${stChip(d.statut)}</td></tr>`
+          : `<tr class="clk" data-id="${d.id}"><td><b>${d.ref}</b></td><td>${esc(d.typeLabel)}</td><td>${esc(d.quartier)}<br><small style="color:var(--muted)">${esc(d.lieu || "")}</small></td><td>${arrL(d.arr)}</td><td>${d.priorite === "Haute" ? `<span class="chip bad">Haute</span>` : `<span class="chip neu">Normale</span>`}</td><td style="white-space:nowrap">${ago(d.date)}${(d.pj || []).length ? ` <span class="chip neu">📷 ${d.pj.length}</span>` : ""}</td><td>${stChip(d.statut)}</td></tr>`), "Aucun dossier ne correspond aux filtres");
       el.querySelector("#cnt").textContent = list.length + " dossier(s)";
       el.querySelectorAll("#list [data-id]").forEach(tr => tr.onclick = () => fiche(col, tr.dataset.id));
     };
@@ -454,20 +537,32 @@ const P = (() => {
         <div class="field"><label>Précisions</label><textarea name="details" style="min-height:80px"></textarea></div><button class="btn btn-orange">${ICONS.save} Enregistrer et remettre le numéro</button></form>`);
       document.getElementById("gf").onsubmit = async e => {
         e.preventDefault(); const d = Object.fromEntries(new FormData(e.target)), dm = DEMARCHES.find(x => x.id === d.type);
-        const ref = await act(() => Store.submitDemande({...d, arr:me.arr || +d.arr, typeLabel:dm.t, service:dm.service, email:""}));
+        const ref = await act(() => Store.submitDemande({...d, arr:me.arr || +d.arr, typeLabel:dm.t, service:dm.service, email:"", montant:dm.prix || 0, paiement:dm.prix ? {choix:"guichet", statut:"À régler"} : {statut:"Gratuit"}, pj:[], document:null}));
         if (ref) { await Store.init(); Store.log("Demande au guichet", ref + " · " + dm.t); refresh(); modal("Demande enregistrée", `<p class="lead-p">Numéro à remettre à l'usager :</p><div class="refbig" style="text-align:center;margin:1rem 0">${ref}</div><p style="color:var(--muted)">L'usager peut suivre l'avancement sur le site, rubrique « Suivre mon dossier ».</p>`); }
       };
     };
     draw();
   }
 
+  const payChip = d => { const p = d.paiement || {}; return p.statut === "Payé" ? `<span class="chip ok" title="${esc(p.mode || "")}">Payé${p.mode ? " · " + (p.mode === "Airtel Money" ? "Airtel" : p.mode === "Carte bancaire" ? "Carte" : esc(p.mode)) : ""}</span>` : p.statut === "À régler" ? `<span class="chip warn">À régler${p.choix === "guichet" ? " (guichet)" : ""}</span>` : `<span class="chip neu">Gratuit</span>`; };
+  const pubOf = d => ({ref:d.ref, typeId:d.type, type:d.typeLabel, prenom:d.prenom, nom:d.nom, quartier:d.quartier, arr:d.arr, date:d.date, montant:d.montant, paiement:d.paiement, document:d.document});
+
   function fiche(col, id) {
     const d = Store.db()[col].find(x => x.id === id); if (!d) return;
-    const isD = col === "demandes", STS = Store.STATUTS[col];
-    const nextNote = {"En traitement":`Dossier pris en charge par le service ${d.service || "technique"}.`, "Pièce manquante":"Merci de fournir : ", "Prête":"Votre document est prêt : retrait au guichet de la mairie muni de votre pièce d'identité.", "Remise":"Document remis au demandeur.", "Rejetée":"", "Pris en charge":"Équipe des services techniques informée.", "En intervention":"Équipe sur place.", "Résolu":"Intervention terminée. Merci pour votre signalement."};
-    modal(d.ref + " · " + d.typeLabel, `<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">${stChip(d.statut)}<span class="chip neu">${arrL(d.arr)}</span>${d.priorite ? `<span class="chip ${d.priorite === "Haute" ? "bad" : "neu"}">Priorité ${d.priorite.toLowerCase()}</span>` : ""}</div>
+    const isD = col === "demandes", STS = Store.STATUTS[col], dem = isD ? DEMARCHES.find(x => x.id === d.type) || {} : {};
+    const nextNote = {"En traitement":`Dossier pris en charge par le service ${d.service || "technique"}.`, "Pièce manquante":"Merci de fournir : ", "Prête":dem.doc ? "Votre document est prêt : téléchargez-le en ligne depuis « Suivre mon dossier » ou retirez-le au guichet." : "Votre dossier est prêt : présentez-vous au guichet avec votre pièce d'identité.", "Remise":"Document remis au demandeur.", "Rejetée":"", "Pris en charge":"Équipe des services techniques informée.", "En intervention":"Équipe sur place.", "Résolu":"Intervention terminée. Merci pour votre signalement."};
+    const p = d.paiement || {};
+    const payBox = !isD ? "" : !d.montant ? `<div class="sbox"><div><b>${ICONS.check} Démarche gratuite</b></div></div>`
+      : p.statut === "Payé" ? `<div class="sbox ok"><div><b>${ICONS.check} Payé : ${money(d.montant)}</b><small>${esc(p.mode)} · ${dtime(p.date)} · quittance ${esc(p.quittance)}${p.transaction ? " · transaction " + esc(p.transaction) : ""}</small></div><button class="btn btn-line btn-sm" id="frecu">${ICONS.dl} Reçu</button></div>`
+      : `<div class="sbox warn"><div><b>${ICONS.wallet} À régler : ${money(d.montant)}</b><small>${p.choix === "guichet" ? "L'usager a choisi de payer à la mairie." : "Paiement en ligne non finalisé."} Encaisser au guichet :</small></div><div class="mini-btns"><select id="encmode" class="btn btn-line btn-sm">${opt(Store.MODES)}</select><button class="btn btn-orange btn-sm" id="enc">${ICONS.wallet} Encaisser</button></div></div>`;
+    const pjBox = (d.pj || []).length ? `<h4 style="margin-top:1rem;color:var(--navy)">Pièces jointes par l'usager</h4><div class="pjlist">${(d.pj || []).map(x => `<a class="pjchip" href="${x.data}" download="${esc(x.nom)}" target="_blank">${ICONS.file}${esc(x.nom)} <small>${x.taille || ""} Ko</small></a>`).join("")}</div>${d.pj.filter(x => /^image/.test(x.type)).map(x => `<img class="pjimg" src="${x.data}" alt="${esc(x.nom)}">`).join("")}` : "";
+    const docBox = !isD || !dem.doc ? "" : `<h4 style="margin-top:1rem;color:var(--navy)">Document délivré à l'usager</h4>
+      <div class="sbox doc"><div><b>${ICONS.file} ${d.document ? (d.document.type === "fichier" ? "Fichier joint : " + esc(d.document.nom) : "Document généré automatiquement (PDF)") : "Pas encore délivré"}</b><small>${d.document ? "Téléchargeable par l'usager une fois la démarche payée et le statut « Prête »." : "Il sera généré automatiquement au passage en « Prête », ou joignez le document scanné/signé."}</small></div>
+      <div class="mini-btns"><button class="btn btn-line btn-sm" id="dprev">${ICONS.dl} Aperçu PDF</button><label class="btn btn-line btn-sm" for="dfile">${ICONS.plus} Joindre le document signé</label><input type="file" id="dfile" accept="application/pdf,image/*" class="sr-only"></div></div>`;
+    modal(d.ref + " · " + d.typeLabel, `<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">${stChip(d.statut)}<span class="chip neu">${arrL(d.arr)}</span>${isD ? payChip(d) : ""}${d.priorite ? `<span class="chip ${d.priorite === "Haute" ? "bad" : "neu"}">Priorité ${d.priorite.toLowerCase()}</span>` : ""}</div>
       <div class="kv"><div><small>${isD ? "Demandeur" : "Signalé par"}</small><b>${esc(d.prenom)} ${esc(d.nom)}</b></div><div><small>Téléphone</small><b>${esc(d.tel)}</b></div><div><small>Quartier</small><b>${esc(d.quartier)}</b></div><div><small>Déposé le</small><b>${date(d.date)}</b></div>${isD ? `<div><small>Service</small><b>${esc(d.service)}</b></div>` : `<div><small>Lieu</small><b>${esc(d.lieu || "—")}</b></div>`}</div>
       ${d.details || d.description ? `<p style="background:var(--bg);padding:.8rem 1rem;border-radius:10px;font-size:.9rem">${esc(d.details || d.description)}</p>` : ""}
+      ${payBox}${pjBox}${docBox}
       <h4 style="margin-top:1.2rem;color:var(--navy)">Historique</h4>
       <div class="hist">${d.historique.slice().reverse().map(h => `<div class="${h.pub ? "" : "priv"}"><small>${dtime(h.date)} · ${h.pub ? "visible par l'usager" : "note interne"}</small><b>${esc(h.statut)}</b> — ${esc(h.note)}</div>`).join("")}</div>
       <form class="form" id="sf" style="border-top:1px solid var(--line);padding-top:1rem">
@@ -482,7 +577,18 @@ const P = (() => {
       e.preventDefault(); const v = Object.fromEntries(new FormData(fm));
       const h = d.historique.concat([{date:new Date().toISOString(), statut:v.statut, note:v.note, pub:!!v.pub, by:me.prenom + " " + me.nom}]);
       const patch = {statut:v.statut, historique:h}; if (v.priorite) patch.priorite = v.priorite;
+      if (isD && dem.doc && v.statut === "Prête" && !d.document) patch.document = {type:"auto", date:new Date().toISOString()};
       if (await act(() => Store.update(col, d.id, patch), "Dossier " + d.ref + " mis à jour.")) { Store.log(isD ? "Demande traitée" : "Signalement traité", d.ref + " → " + v.statut); refresh(); }
+    };
+    const enc = document.getElementById("enc");
+    if (enc) enc.onclick = async () => { const mode = document.getElementById("encmode").value; enc.disabled = true; const r = await act(() => Store.encaisser(d.id, mode), "Paiement encaissé : " + money(d.montant)); if (r) { Store.log("Encaissement", d.ref + " · " + mode + " · " + money(d.montant)); refresh(); quittance(r); } else enc.disabled = false; };
+    const fr = document.getElementById("frecu"); if (fr) fr.onclick = () => downloadRecu(pubOf(d)).catch(e => toast(e.message, "err"));
+    const dp = document.getElementById("dprev"); if (dp) dp.onclick = () => downloadDocument({...pubOf(d), document:d.document || {type:"auto", date:new Date().toISOString()}}).catch(e => toast(e.message, "err"));
+    const df = document.getElementById("dfile");
+    if (df) df.onchange = async () => {
+      let files; try { files = await readFiles(df); } catch (e) { return toast(e.message, "err"); }
+      if (!files.length) return; const x = files[0];
+      if (await act(() => Store.update("demandes", d.id, {document:{type:"fichier", nom:x.nom, data:x.data, date:new Date().toISOString()}}), "Document joint au dossier : l'usager pourra le télécharger.")) { Store.log("Document délivré", d.ref + " · " + x.nom); refresh(); fiche(col, id); }
     };
   }
 

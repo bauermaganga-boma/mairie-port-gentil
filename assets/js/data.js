@@ -76,15 +76,46 @@ const ICONS = {
   ext:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>',
 };
 
-/* ---------- Les quatre arrondissements ---------- */
-const ARRONDISSEMENTS = [
-  {n:1, t:"1er arrondissement", maire:"", d:"Mairie d'arrondissement placée sous la coordination du maire central. Les informations détaillées (maire, quartiers, services) seront publiées avec la mairie d'arrondissement.", quartiers:[], fb:""},
-  {n:2, t:"2e arrondissement", maire:"", d:"La mairie du 2e arrondissement dispose déjà d'une page Facebook et d'un site d'information (état civil, services, comités de quartier, mariage, demande d'audience).", quartiers:[], fb:"https://www.facebook.com/Mairie2eArrondissementPortGentil/"},
-  {n:3, t:"3e arrondissement", maire:"", d:"Mairie d'arrondissement placée sous la coordination du maire central. Les informations détaillées (maire, quartiers, services) seront publiées avec la mairie d'arrondissement.", quartiers:[], fb:""},
-  {n:4, t:"4e arrondissement", maire:"Érick Ayang Nang", d:"Le sud de l'île Mandji, un arrondissement en pleine mutation : il accueille le programme présidentiel de 848 logements de Lip Matanda, lancé en septembre 2026. Sa mairie mise sur une gouvernance de proximité, pragmatique et orientée résultats.",
-    quartiers:["Matanda","Lip Matanda","Iguiri","Matiti 1","Matiti 2","Ntchengué","Quartier Sud","Boule-Noire 2","Salsa","Camp Boiro (marché)"],
-    fb:"https://www.facebook.com/p/Port-Gentil-Mairie-du-4%C3%A8me-Arrondissement-100079508306412/"},
+/* ---------- Les quatre arrondissements (même modèle pour chacun) ---------- */
+const COMMUN_ARR = [
+  "Dotation 2026 de 250 millions FCFA pour des infrastructures ciblées",
+  "Curage des canaux et prévention des inondations",
+  "Voiries secondaires et éclairage public",
+  "Réhabilitation des routes lancée en avril 2026 dans les quatre arrondissements",
+  "Opération trimestrielle d'assainissement depuis janvier 2026",
 ];
+const ARRONDISSEMENTS = [
+  {n:1, t:"1er arrondissement", maire:"", img:"hotel-de-ville",
+    d:"Il comprend notamment l'axe ASECNA – Cap Lopez et le secteur du carrefour Léon Mba. L'arrondissement est au cœur de l'opération « Libérez le domaine public », qui doit dégager l'espace nécessaire à l'élargissement et à la modernisation des voies.",
+    reperes:["ASECNA","Cap Lopez","Carrefour Léon Mba","Cora Wood","Route de l'aéroport"],
+    actions:[
+      {date:"2026-09-29", t:"Démolitions des constructions sur le domaine public de l'axe ASECNA – Cap Lopez, avec une bande de 12 mètres libérée pour les futurs aménagements", src:"Gabonactu", url:"https://gabonactu.com/blog/2026/09/29/port-gentil-la-mairie-passe-aux-demolitions/"},
+      {date:"2026-01-08", t:"Assainissement du tronçon Cora Wood – carrefour Léon Mba et de la route vers l'aéroport : caniveaux débouchés, ordures évacuées", src:"Gabon Media Time", url:"https://gabonmediatime.com/port-gentil-la-mairie-declenche-une-offensive-trimestrielle-contre-linsalubrite/"},
+    ], fb:""},
+  {n:2, t:"2e arrondissement", maire:"", img:"marche-grand-village",
+    d:"Il borde le marché de Grand Village, l'un des grands pôles commerçants de la ville. La mairie du 2e arrondissement dispose déjà de sa page Facebook et d'un site d'information (état civil, services, comités de quartier, mariage, demande d'audience).",
+    reperes:["Grand Village (marché)","Centre commerçant","Comités de quartier"],
+    actions:[
+      {date:"2026-01-07", t:"Libération du domaine public autour du marché de Grand Village : kiosques, hangars et étals anarchiques démolis", src:"Gabonactu", url:"https://gabonactu.com/blog/2026/01/07/port-gentil-le-nouveau-maire-en-guerre-ouverte-contre-lanarchie"},
+      {date:"2026-01-08", t:"Lancement de l'opération trimestrielle d'assainissement dans les quartiers", src:"Gabon Media Time", url:"https://gabonmediatime.com/port-gentil-la-mairie-declenche-une-offensive-trimestrielle-contre-linsalubrite/"},
+    ], fb:"https://www.facebook.com/Mairie2eArrondissementPortGentil/"},
+  {n:3, t:"3e arrondissement", maire:"", img:"grand-village-visite",
+    d:"Il partage avec le 2e arrondissement le secteur du marché de Grand Village. Ses habitants sont directement concernés par l'opération trimestrielle d'assainissement : caniveaux bouchés et dépôts d'ordures sont les premières cibles.",
+    reperes:["Grand Village (marché)","Quartiers résidentiels"],
+    actions:[
+      {date:"2026-01-08", t:"Opération trimestrielle d'assainissement : curage des caniveaux, nettoyage des rues, évacuation des déchets", src:"Gabon Media Time", url:"https://gabonmediatime.com/port-gentil-la-mairie-declenche-une-offensive-trimestrielle-contre-linsalubrite/"},
+      {date:"2026-01-07", t:"Opération de libération du domaine public autour du marché de Grand Village", src:"Gabonactu", url:"https://gabonactu.com/blog/2026/01/07/port-gentil-le-nouveau-maire-en-guerre-ouverte-contre-lanarchie"},
+    ], fb:""},
+  {n:4, t:"4e arrondissement", maire:"Érick Ayang Nang", img:"terrain-4e",
+    d:"Le sud de l'île Mandji, en pleine mutation : il accueille le programme de 848 logements de Lip Matanda. Sa mairie mise sur une gouvernance de proximité : canaux, voirie, lutte contre les constructions anarchiques, écoute des commerçants.",
+    reperes:["Matanda","Lip Matanda","Iguiri","Matiti 1 et 2","Ntchengué","Quartier Sud","Boule-Noire 2","Salsa","Camp Boiro (marché)"],
+    actions:[
+      {date:"2026-09-29", t:"Démolitions sur le domaine public de l'axe Matanda – Ntchengué", src:"Gabonactu", url:"https://gabonactu.com/blog/2026/09/29/port-gentil-la-mairie-passe-aux-demolitions/"},
+      {date:"2026-09-25", t:"Lancement des 848 logements de Lip Matanda par le Président de la République", src:"Gabonactu", url:"https://gabonactu.com/blog/2026/09/25/port-gentil-lancement-des-travaux-de-848-logements-a-lip-matanda/"},
+      {date:"2026-02-10", t:"Curage des canaux de Lip Matanda, regards de Matiti 1 et 2, concertation au marché de Camp Boiro", src:"Gabonactu", url:"https://gabonactu.com/blog/2026/02/10/port-gentil-ecoute-et-actions-de-terrain-pour-le-maire-du-4eme-arrondissement"},
+    ], fb:"https://www.facebook.com/p/Port-Gentil-Mairie-du-4%C3%A8me-Arrondissement-100079508306412/"},
+];
+const QUARTIERS = ["ASECNA","Cap Lopez","Carrefour Léon Mba","Cora Wood","Grand Village","Centre-ville","Bord de mer","La Balise","Matanda","Lip Matanda","Iguiri","Matiti 1","Matiti 2","Ntchengué","Quartier Sud","Boule-Noire 2","Salsa","Camp Boiro"];
 
 /* ---------- Démarches (pièces indicatives : à valider avec les services) ---------- */
 const CAT_DEM = {
@@ -95,47 +126,63 @@ const CAT_DEM = {
   "mairie": {l:"Le maire & la mairie", c:"#5b3fb3"},
 };
 const DEMARCHES = [
-  {id:"naissance", cat:"etat-civil", ic:"baby", t:"Copie ou extrait d'acte de naissance", d:"Obtenir une copie intégrale ou un extrait de votre acte de naissance enregistré à Port-Gentil.", pieces:["Nom, prénoms et date de naissance de la personne concernée","Noms des parents","Pièce d'identité du demandeur"], service:"État civil"},
-  {id:"decl-naissance", cat:"etat-civil", ic:"baby", t:"Déclaration de naissance", d:"Déclarer la naissance d'un enfant auprès de l'officier d'état civil de votre arrondissement.", pieces:["Certificat d'accouchement délivré par la maternité","Pièces d'identité des parents","Livret de famille ou acte de mariage, le cas échéant"], service:"État civil"},
-  {id:"deces", cat:"etat-civil", ic:"file", t:"Acte de décès", d:"Déclarer un décès ou obtenir une copie d'acte de décès.", pieces:["Certificat médical de décès","Pièce d'identité du défunt","Pièce d'identité du déclarant"], service:"État civil"},
-  {id:"copie-mariage", cat:"etat-civil", ic:"ring", t:"Copie d'acte de mariage", d:"Obtenir une copie de votre acte de mariage célébré à Port-Gentil.", pieces:["Noms des époux et date du mariage","Pièce d'identité du demandeur"], service:"État civil"},
-  {id:"legalisation", cat:"etat-civil", ic:"stamp", t:"Légalisation & copie conforme", d:"Faire légaliser une signature ou certifier conforme la copie d'un document original.", pieces:["Document original","Pièce d'identité du signataire"], service:"État civil"},
-  {id:"residence", cat:"etat-civil", ic:"home", t:"Certificat de résidence", d:"Attester de votre domicile sur le territoire de la commune.", pieces:["Pièce d'identité","Justificatif de domicile ou attestation du chef de quartier"], service:"État civil"},
-  {id:"mariage", cat:"famille", ic:"ring", t:"Dossier de mariage civil", d:"Déposer un dossier de mariage, fixer la date de célébration et la publication des bans.", pieces:["Actes de naissance des futurs époux","Pièces d'identité des époux et des témoins","Certificats de résidence","Certificat de célibat ou de non-remariage"], service:"État civil"},
-  {id:"permis", cat:"urbanisme", ic:"building", t:"Permis de construire", d:"Demander l'autorisation de construire, d'agrandir ou de modifier un bâtiment.", pieces:["Titre foncier ou attestation d'attribution du terrain","Plans du projet (situation, masse, façades)","Pièce d'identité du demandeur"], service:"Urbanisme"},
-  {id:"domaine", cat:"urbanisme", ic:"map", t:"Occupation du domaine public", d:"Kiosque, étal, terrasse, dépôt de matériaux : demander une autorisation d'occupation temporaire.", pieces:["Description et emplacement souhaité","Durée d'occupation","Pièce d'identité ou registre de commerce"], service:"Domaine public"},
-  {id:"place", cat:"urbanisme", ic:"wallet", t:"Emplacement au marché", d:"Demander une place dans un marché municipal (Grand Village, Camp Boiro…).", pieces:["Activité exercée","Pièce d'identité","Registre de commerce, le cas échéant"], service:"Domaine public"},
-  {id:"signalement", cat:"cadre-vie", ic:"alert", t:"Signaler un problème", d:"Canal bouché, dépôt d'ordures, éclairage en panne, voirie dégradée, construction anarchique : prévenez les services techniques.", pieces:["Lieu précis (quartier, repère)","Description du problème"], service:"Services techniques", signal:true},
-  {id:"audience", cat:"mairie", ic:"cal", t:"Demande d'audience", d:"Solliciter un rendez-vous avec le maire, un adjoint ou un maire d'arrondissement.", pieces:["Objet de la demande","Vos coordonnées"], service:"Cabinet du maire"},
+  {id:"naissance", prix:2000, doc:true, cat:"etat-civil", ic:"baby", t:"Copie ou extrait d'acte de naissance", d:"Obtenir une copie intégrale ou un extrait de votre acte de naissance enregistré à Port-Gentil.", pieces:["Nom, prénoms et date de naissance de la personne concernée","Noms des parents","Pièce d'identité du demandeur"], service:"État civil"},
+  {id:"decl-naissance", prix:0, doc:true, cat:"etat-civil", ic:"baby", t:"Déclaration de naissance", d:"Déclarer la naissance d'un enfant auprès de l'officier d'état civil de votre arrondissement.", pieces:["Certificat d'accouchement délivré par la maternité","Pièces d'identité des parents","Livret de famille ou acte de mariage, le cas échéant"], service:"État civil"},
+  {id:"deces", prix:2000, doc:true, cat:"etat-civil", ic:"file", t:"Acte de décès", d:"Déclarer un décès ou obtenir une copie d'acte de décès.", pieces:["Certificat médical de décès","Pièce d'identité du défunt","Pièce d'identité du déclarant"], service:"État civil"},
+  {id:"copie-mariage", prix:2000, doc:true, cat:"etat-civil", ic:"ring", t:"Copie d'acte de mariage", d:"Obtenir une copie de votre acte de mariage célébré à Port-Gentil.", pieces:["Noms des époux et date du mariage","Pièce d'identité du demandeur"], service:"État civil"},
+  {id:"legalisation", prix:1000, doc:false, cat:"etat-civil", ic:"stamp", t:"Légalisation & copie conforme", d:"Faire légaliser une signature ou certifier conforme la copie d'un document original.", pieces:["Document original","Pièce d'identité du signataire"], service:"État civil"},
+  {id:"residence", prix:2000, doc:true, cat:"etat-civil", ic:"home", t:"Certificat de résidence", d:"Attester de votre domicile sur le territoire de la commune.", pieces:["Pièce d'identité","Justificatif de domicile ou attestation du chef de quartier"], service:"État civil"},
+  {id:"mariage", prix:20000, doc:false, cat:"famille", ic:"ring", t:"Dossier de mariage civil", d:"Déposer un dossier de mariage, fixer la date de célébration et la publication des bans.", pieces:["Actes de naissance des futurs époux","Pièces d'identité des époux et des témoins","Certificats de résidence","Certificat de célibat ou de non-remariage"], service:"État civil"},
+  {id:"permis", prix:50000, doc:true, cat:"urbanisme", ic:"building", t:"Permis de construire", d:"Demander l'autorisation de construire, d'agrandir ou de modifier un bâtiment.", pieces:["Titre foncier ou attestation d'attribution du terrain","Plans du projet (situation, masse, façades)","Pièce d'identité du demandeur"], service:"Urbanisme"},
+  {id:"domaine", prix:10000, doc:true, cat:"urbanisme", ic:"map", t:"Occupation du domaine public", d:"Kiosque, étal, terrasse, dépôt de matériaux : demander une autorisation d'occupation temporaire.", pieces:["Description et emplacement souhaité","Durée d'occupation","Pièce d'identité ou registre de commerce"], service:"Domaine public"},
+  {id:"place", prix:5000, doc:true, cat:"urbanisme", ic:"wallet", t:"Emplacement au marché", d:"Demander une place dans un marché municipal (Grand Village, Camp Boiro…).", pieces:["Activité exercée","Pièce d'identité","Registre de commerce, le cas échéant"], service:"Domaine public"},
+  {id:"signalement", prix:0, doc:false, cat:"cadre-vie", ic:"alert", t:"Signaler un problème", d:"Canal bouché, dépôt d'ordures, éclairage en panne, voirie dégradée, construction anarchique : prévenez les services techniques.", pieces:["Lieu précis (quartier, repère)","Description du problème"], service:"Services techniques", signal:true},
+  {id:"audience", prix:0, doc:false, cat:"mairie", ic:"cal", t:"Demande d'audience", d:"Solliciter un rendez-vous avec le maire, un adjoint ou un maire d'arrondissement.", pieces:["Objet de la demande","Vos coordonnées"], service:"Cabinet du maire"},
 ];
+/* Paiement : tarifs indicatifs (à confirmer par délibération). doc:true = document téléchargeable en ligne une fois prêt. */
+const PAIEMENT = {
+  modes:[
+    {id:"airtel", l:"Airtel Money", s:"Paiement depuis votre téléphone", c:"#e40000"},
+    {id:"carte", l:"Carte bancaire", s:"Visa, Mastercard, GIMAC", c:"#1477b5"},
+  ],
+  guichet:"Payer à la mairie (espèces, Airtel Money ou carte au guichet)",
+  note:"Tarifs indicatifs pour la démonstration, à confirmer par la mairie.",
+};
+const fcfa = n => n ? Math.round(n).toLocaleString("fr-FR").replace(/ | /g, " ") + " FCFA" : "Gratuit";
+
 const TYPES_SIGNAL = [
   ["canal","Canal bouché / inondation","wave"],["ordures","Dépôt d'ordures","trash"],["eclairage","Éclairage public en panne","light"],
   ["voirie","Voirie dégradée / regard","road"],["anarchique","Construction ou occupation anarchique","alert"],["autre","Autre problème","chat"],
 ];
 
-/* ---------- Projets & chantiers (sources : presse 2020-2026) ---------- */
+/* ---------- Projets & chantiers (sources : presse 2025-2026) ---------- */
 const PROJETS = [
   {t:"Curage des canaux et prévention des inondations", arr:0, th:"assainissement", st:"En cours", img:"canal-4e", d:"Priorité du budget 2026 dans les quatre arrondissements : désherbage, extraction des déchets et curage des canaux principaux."},
+  {t:"Réhabilitation des routes des 4 arrondissements", arr:0, th:"voirie", st:"Lancé", img:"conseil-municipal", note:"Photo d'illustration", d:"Lancée par le maire en avril 2026 dans les quatre arrondissements, avec un financement PID/PIH soumis à des exigences de performance et de transparence."},
+  {t:"Libérez le domaine public : axes ASECNA – Cap Lopez et Matanda – Ntchengué", arrs:[1,4], arr:0, th:"cadre-vie", st:"En cours", img:"grand-village-liberation", note:"Photo d'illustration : opération de Grand Village", d:"29 septembre 2026 : démolition des constructions marquées sur le domaine public dans les 1er et 4e arrondissements ; une bande de 12 mètres est libérée pour élargir et moderniser les voies."},
+  {t:"Opération trimestrielle d'assainissement", arr:0, th:"assainissement", st:"En cours", img:"grand-village-visite", d:"Depuis le 8 janvier 2026 : caniveaux débouchés, rues nettoyées, déchets évacués, d'abord du carrefour Léon Mba à la route de l'aéroport (1er arrondissement), puis dans toute la ville."},
+  {t:"Grand Village : libération du domaine public", arrs:[2,3], arr:0, th:"cadre-vie", st:"Réalisé", img:"marche-grand-village", d:"Janvier 2026 : kiosques, hangars et étals anarchiques démolis autour du marché de Grand Village, entre les 2e et 3e arrondissements."},
   {t:"848 logements de Lip Matanda", arr:4, th:"logement", st:"Lancé", img:"lip-matanda-engin", d:"Lancés le 25 septembre 2026 par le Président de la République, Brice Clotaire Oligui Nguema, pour répondre à la forte demande de logement et créer des emplois locaux."},
-  {t:"Libération du domaine public à Grand Village", arr:0, th:"cadre-vie", st:"Réalisé", img:"grand-village-liberation", d:"Janvier 2026 : opération contre l'occupation anarchique du domaine public (kiosques, hangars et étals démolis) pour rendre l'espace aux usagers."},
-  {t:"Voiries secondaires et éclairage public", arr:0, th:"voirie", st:"Programmé", img:"conseil-municipal", d:"Bitumage de voiries secondaires dans les quartiers sous-équipés et extension de l'éclairage public, inscrits au budget 2026."},
-  {t:"Regards d'assainissement de Matiti 1 et 2", arr:4, th:"assainissement", st:"Réalisé", img:"terrain-4e", d:"2 février 2026 : repositionnement des regards défectueux sur la voie bitumée de Matiti 1 et 2."},
-  {t:"Salubrité du marché de Camp Boiro", arr:4, th:"cadre-vie", st:"En cours", img:"marche-grand-village", note:"Photo d'illustration : marché de Grand Village", d:"Collecte des déchets solides et concertation avec les commerçants pour la salubrité et la sécurité du marché."},
-  {t:"Collecte et valorisation des déchets", arr:0, th:"assainissement", st:"Programmé", img:"grand-village-visite", d:"Nouveaux camions et équipements de collecte ; valorisation des déchets plastiques et organiques."},
-  {t:"Étude de transport fluvial et maritime", arr:0, th:"mobilite", st:"À l'étude", img:"hotel-de-ville", d:"Étude inscrite au budget 2026 pour mieux relier l'île Mandji et faciliter les déplacements."},
-  {t:"Réhabilitation d'écoles publiques", arr:4, th:"social", st:"Réalisé", img:"ecole-la-balise", note:"Photo : école publique de La Balise II", d:"Septembre 2025 : VAALCO Gabon réhabilite les écoles de La Balise II et de Matanda (1 151 élèves à Matanda)."},
-  {t:"Fonds d'entrepreneuriat des jeunes & banque alimentaire", arr:0, th:"social", st:"Programmé", img:"maire-bureau", d:"Deux dispositifs sociaux annoncés au budget 2026 : soutien aux jeunes porteurs de projets et aide alimentaire."},
+  {t:"Canaux de Lip Matanda et regards de Matiti", arr:4, th:"assainissement", st:"Réalisé", img:"terrain-4e", d:"Janvier-février 2026 : désherbage des canaux de Lip Matanda et repositionnement des regards de la voie bitumée de Matiti 1 et 2."},
+  {t:"Collecte et valorisation des déchets", arr:0, th:"assainissement", st:"Programmé", img:"canal-4e", note:"Photo d'illustration", d:"Nouveaux camions et équipements de collecte ; valorisation des déchets plastiques et organiques (budget 2026)."},
+  {t:"Étude de transport fluvial et maritime", arr:0, th:"mobilite", st:"À l'étude", img:"hotel-de-ville", note:"Photo d'illustration", d:"Étude inscrite au budget 2026 pour mieux relier l'île Mandji et faciliter les déplacements."},
+  {t:"Culture et patrimoine : festival Mandji, monuments, Canal Olympia", arr:0, th:"social", st:"Programmé", img:"conseil-municipal", note:"Photo d'illustration", d:"Juillet 2026 : le conseil municipal décide la relance du festival culturel Mandji, la réhabilitation des monuments historiques et la reprise du site Canal Olympia par la commune."},
+  {t:"Fonds d'entrepreneuriat des jeunes & banque alimentaire", arr:0, th:"social", st:"Programmé", img:"maire-bureau", d:"Fonds municipal pour les jeunes, artisans, femmes entrepreneures et petits commerces ; banque alimentaire (budget 2026)."},
+  {t:"Réhabilitation d'écoles publiques", arr:0, th:"social", st:"Réalisé", img:"ecole-la-balise", note:"Photo : école publique de La Balise II", d:"Septembre 2025 : VAALCO Gabon réhabilite les écoles de La Balise II et de Matanda (1 151 élèves à Matanda)."},
 ];
-const THEMES = {assainissement:"Assainissement", logement:"Logement", "cadre-vie":"Cadre de vie", voirie:"Voirie & éclairage", mobilite:"Mobilité", social:"Social & jeunesse"};
+const THEMES = {assainissement:"Assainissement", voirie:"Voirie & éclairage", "cadre-vie":"Cadre de vie", logement:"Logement", mobilite:"Mobilité", social:"Social & culture"};
 
 /* ---------- Actualités (articles de presse) ---------- */
 const ACTUS = [
-  {date:"2026-09-25", cat:"Logement", img:"lip-matanda-ceremonie", t:"Lancement des 848 logements de Lip Matanda", d:"Le Président de la République a lancé la construction de 848 logements dans le 4e arrondissement, un projet attendu face à la forte demande de logement.", src:"Gabonactu", url:"https://gabonactu.com/blog/2026/09/25/port-gentil-lancement-des-travaux-de-848-logements-a-lip-matanda/"},
+  {date:"2026-09-29", cat:"1er & 4e arrondissements", img:"grand-village-liberation", t:"« Libérez le domaine public » : place aux démolitions", d:"Sur les axes ASECNA – Cap Lopez et Matanda – Ntchengué, la mairie démolit les constructions marquées et libère une bande de 12 mètres pour moderniser les voies.", src:"Gabonactu", url:"https://gabonactu.com/blog/2026/09/29/port-gentil-la-mairie-passe-aux-demolitions/"},
+  {date:"2026-09-25", cat:"Logement", img:"lip-matanda-ceremonie", t:"Lancement des 848 logements de Lip Matanda", d:"Le Président de la République a lancé la construction de 848 logements, un projet attendu face à la forte demande de logement.", src:"Gabonactu", url:"https://gabonactu.com/blog/2026/09/25/port-gentil-lancement-des-travaux-de-848-logements-a-lip-matanda/"},
+  {date:"2026-07-24", cat:"Conseil municipal", img:"conseil-municipal", t:"Le conseil municipal lance une nouvelle ère de réformes", d:"Gestion du personnel, comité de pilotage des chantiers, journée patriotique d'assainissement, festival Mandji, monuments historiques et site Canal Olympia.", src:"Gabonreview", url:"https://www.gabonreview.com/port-gentil-le-conseil-municipal-lance-une-nouvelle-ere-de-reformes-pour-transformer-la-capitale-economique/"},
   {date:"2026-05-13", cat:"Administration", img:"maire-bureau", t:"Audit interne : la mairie engage sa modernisation", d:"Le maire a présenté les conclusions d'un audit mené en interne : digitalisation progressive, contrôle interne renforcé et réorganisation des ressources humaines.", src:"Gabonreview", url:"https://www.gabonreview.com/port-gentil-la-mairie-devoile-les-failles-de-son-administration-et-lance-sa-mue-structurelle/"},
-  {date:"2026-05-07", cat:"Solidarité", img:"terrain-4e", t:"Le maire du 4e arrondissement au chevet d'un jeune non-voyant", d:"Érick Ayang Nang s'est rendu au quartier Salsa pour accompagner un jeune non-voyant en difficulté.", src:"Gabonactu", url:"https://gabonactu.com/blog/2026/05/07/port-gentil-erick-ayang-nang-au-chevet-dun-jeune-aveugle-en-difficulte/"},
-  {date:"2026-04-18", cat:"Conseil municipal", img:"conseil-municipal", t:"Un budget historique de 23,9 milliards FCFA", d:"Adopté à l'unanimité avec 21 délibérations, contre 9,5 milliards en 2024 : 250 millions FCFA par arrondissement, canaux, voiries et éclairage en priorité.", src:"Direct Infos Gabon", url:"https://directinfosgabon.com/mairie-de-port-gentil-un-budget-historique-de-24-milliards-de-fcfa-pour-transformer-la-cite-petroliere/"},
-  {date:"2026-02-10", cat:"4e arrondissement", img:"canal-4e", t:"Écoute et actions de terrain dans le 4e arrondissement", d:"Curage des canaux de Lip Matanda, regards de Matiti, sensibilisation contre les constructions anarchiques et concertation au marché de Camp Boiro.", src:"Gabonactu", url:"https://gabonactu.com/blog/2026/02/10/port-gentil-ecoute-et-actions-de-terrain-pour-le-maire-du-4eme-arrondissement"},
-  {date:"2026-01-07", cat:"Domaine public", img:"grand-village-visite", t:"Grand Village : opération contre l'occupation anarchique", d:"Le nouveau maire a lancé la libération du domaine public : kiosques, hangars et étals anarchiques ont été démolis.", src:"Gabonactu", url:"https://gabonactu.com/blog/2026/01/07/port-gentil-le-nouveau-maire-en-guerre-ouverte-contre-lanarchie"},
+  {date:"2026-04-22", cat:"Voirie", img:"hotel-de-ville", t:"Les routes des quatre arrondissements vont faire peau neuve", d:"Le maire lance un programme de réhabilitation des voiries dans tous les arrondissements de la commune.", src:"Gabonactu", url:"https://gabonactu.com/blog/2026/04/22/port-gentil-les-routes-vont-faire-peau-neuve/"},
+  {date:"2026-04-18", cat:"Budget", img:"maire-hotel-de-ville", t:"Un budget historique de 23,9 milliards FCFA", d:"Adopté à l'unanimité avec 21 délibérations : 250 millions FCFA pour chacun des quatre arrondissements, canaux, voiries et éclairage en priorité.", src:"Direct Infos Gabon", url:"https://directinfosgabon.com/mairie-de-port-gentil-un-budget-historique-de-24-milliards-de-fcfa-pour-transformer-la-cite-petroliere/"},
+  {date:"2026-02-10", cat:"4e arrondissement", img:"canal-4e", t:"Actions de terrain dans le 4e arrondissement", d:"Curage des canaux de Lip Matanda, regards de Matiti, sensibilisation contre les constructions anarchiques et concertation au marché de Camp Boiro.", src:"Gabonactu", url:"https://gabonactu.com/blog/2026/02/10/port-gentil-ecoute-et-actions-de-terrain-pour-le-maire-du-4eme-arrondissement"},
+  {date:"2026-01-08", cat:"Assainissement", img:"grand-village-visite", t:"Offensive trimestrielle contre l'insalubrité", d:"Caniveaux débouchés et rues nettoyées, du carrefour Léon Mba à la route de l'aéroport, avant d'étendre l'opération à toute la ville.", src:"Gabon Media Time", url:"https://gabonmediatime.com/port-gentil-la-mairie-declenche-une-offensive-trimestrielle-contre-linsalubrite/"},
+  {date:"2026-01-07", cat:"Domaine public", img:"marche-grand-village", t:"Grand Village : opération contre l'occupation anarchique", d:"Le nouveau maire lance la libération du domaine public : kiosques, hangars et étals anarchiques démolis.", src:"Gabonactu", url:"https://gabonactu.com/blog/2026/01/07/port-gentil-le-nouveau-maire-en-guerre-ouverte-contre-lanarchie"},
   {date:"2025-11-09", cat:"Institution", img:"maire-hotel-de-ville", t:"Pascal Houangni Ambouroue élu maire de Port-Gentil", d:"Financier de formation, ancien directeur général de la BVMAC et ancien ministre, il prend la tête de la commune.", src:"Gabon Media Time", url:"https://gabonmediatime.com/gabon-pascal-houangni-ambouroue-elu-maire-de-port-gentil/"},
 ];
 
@@ -166,6 +213,6 @@ const ESPACES = [
     pts:["Traitement des demandes en ligne avec suivi","Registre d'état civil numérique","Recettes, personnel et stocks"],
     demo:{login:"etat.civil", pwd:"agent2026", nom:"Service de l'état civil"}},
   {role:"arrondissement", ic:"map", t:"Mairies d'arrondissement", s:"Gestion de proximité", c:"#c97a00",
-    pts:["Demandes et signalements de l'arrondissement","Suivi de la dotation de 250 M FCFA","Statistiques remontées à la mairie centrale"],
-    demo:{login:"arr4", pwd:"arr2026", nom:"Mairie du 4e arrondissement"}},
+    pts:["Demandes, signalements et actes de l'arrondissement","Indicateurs de gestion et suivi des 250 M FCFA","Une mairie, un accès : 1er, 2e, 3e et 4e"],
+    demo:{login:"arr1", pwd:"arr2026", nom:"Comptes arr1, arr2, arr3, arr4"}},
 ];

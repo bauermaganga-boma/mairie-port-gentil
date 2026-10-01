@@ -50,12 +50,12 @@
 <script>
 (() => {
   const cfg = {
-    cabinet: {img:"maire-bureau", t:"Piloter la commune en temps réel.", p:"Tableau de bord, alertes automatiques, recettes, chantiers et agenda : une vue d'ensemble des quatre arrondissements.",
+    cabinet: {img:"maire-bureau", t:"Piloter la commune en temps réel.", p:"Tableau de bord, indicateurs (camemberts, courbes, comparatif des 4 arrondissements), alertes automatiques, recettes et chantiers.",
       demo:[["maire","pog2026","Cabinet du maire — accès complet"],["secretariat","admin2026","Secrétariat général — accès complet + comptes"]]},
     services: {img:"conseil-municipal", t:"Chaque service, son outil.", p:"État civil, services techniques, finances, ressources humaines : chacun traite ses dossiers et tout reste tracé.",
       demo:[["etat.civil","agent2026","État civil — demandes, registre, stocks"],["services.techniques","agent2026","Services techniques — signalements, chantiers"],["recettes","agent2026","Finances — encaissements, quittances"],["rh","agent2026","Ressources humaines — dossiers du personnel"]]},
-    arrondissement: {img:"terrain-4e", t:"La proximité, outillée.", p:"Chaque mairie d'arrondissement gère ses demandes, signalements, actes et chantiers ; ses chiffres remontent automatiquement à la mairie centrale.",
-      demo:[["arr4","arr2026","Mairie du 4e arrondissement"],["arr1","arr2026","Mairie du 1er arrondissement"]]},
+    arrondissement: {img:"marche-grand-village", t:"La proximité, outillée.", p:"Chaque mairie d'arrondissement gère ses demandes, encaissements, actes et chantiers, suit ses propres indicateurs, et ses chiffres remontent automatiquement à la mairie centrale.",
+      demo:[["arr1","arr2026","Mairie du 1er arrondissement"],["arr2","arr2026","Mairie du 2e arrondissement"],["arr3","arr2026","Mairie du 3e arrondissement"],["arr4","arr2026","Mairie du 4e arrondissement"]]},
   };
   let role = new URLSearchParams(location.search).get("role");
   if (!cfg[role]) role = "cabinet";

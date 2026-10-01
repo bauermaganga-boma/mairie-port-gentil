@@ -5,11 +5,11 @@ Proposition de site conçue par Rouana (version de démonstration).
 ## Pages publiques
 - `index.html` : accueil (démarches, mot du maire, budget 2026, espace numérique, projets, actualités, avis)
 - `mairie.html` : le maire, l'organisation des services, Port-Gentil en bref, l'audit de mai 2026
-- `arrondissements.html` : les 4 mairies d'arrondissement (focus 4e arrondissement)
-- `demarches.html` : 12 démarches, dépôt en ligne en 3 étapes, signalements, suivi de dossier par numéro
+- `arrondissements.html` : les 4 mairies d'arrondissement, même présentation pour chacune (repères, actions datées et sourcées, projets)
+- `demarches.html` : 12 démarches avec tarifs indicatifs, dépôt en 4 étapes avec pièces justificatives, paiement en ligne (Airtel Money, carte bancaire) ou à la mairie, suivi par n° de dossier + téléphone, téléchargement du document et du reçu en PDF
 - `projets.html` : projets et chantiers filtrables
 - `actualites.html` : avis et communiqués (gérés depuis le back-office), presse, galerie
-- `contact.html` : formulaire (reçu dans le back-office), carte
+- `contact.html` : message à la mairie centrale ou à une mairie d'arrondissement, avec pièces jointes (reçu dans le back-office)
 
 ## Back-office (`espace.html` → `agents.html`)
 | Profil | Identifiant / mot de passe (démo) | Modules |
@@ -20,9 +20,11 @@ Proposition de site conçue par Rouana (version de démonstration).
 | Services techniques | `services.techniques` / `agent2026` | signalements, chantiers, stocks |
 | Finances | `recettes` / `agent2026` | encaissements, quittances, chantiers |
 | Ressources humaines | `rh` / `agent2026` | dossiers du personnel, pièces manquantes |
-| Mairie d'arrondissement | `arr4` ou `arr1` / `arr2026` | ses propres dossiers uniquement |
+| Mairie d'arrondissement | `arr1`, `arr2`, `arr3`, `arr4` / `arr2026` | ses propres dossiers, messages et indicateurs |
 
-Les personnes, montants et dossiers de démonstration sont **fictifs**.
+Module **Indicateurs** (maire central, secrétariat, finances, maires d'arrondissement) : courbes (demandes, recettes par arrondissement), camemberts (statuts, moyens de paiement, nature des recettes, signalements), délais, dotation engagée, tableau comparatif des 4 arrondissements.
+
+Les personnes, montants et dossiers de démonstration sont **fictifs**. Le paiement est **simulé** : en production, il passe par un prestataire agréé (Airtel Money, agrégateur, banque) dont le webhook appelle `pay_public`.
 
 ## Base de données
 - Vide (`assets/js/config.js`) = mode démonstration, données dans le navigateur.

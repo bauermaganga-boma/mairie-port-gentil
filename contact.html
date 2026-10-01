@@ -25,7 +25,7 @@
     <p class="crumbs"><a href="index.html">Accueil</a> › Contact</p>
     <span class="eyebrow">Contact</span>
     <h1>Écrire à la mairie</h1>
-    <p>Une question, une suggestion, une demande de partenariat ? Votre message est transmis au secrétariat de la mairie.</p>
+    <p>Une question, une réclamation, un document à transmettre ? Écrivez à la mairie centrale ou à votre mairie d'arrondissement, pièces jointes comprises.</p>
   </div>
 </section>
 
@@ -35,8 +35,10 @@
     <form class="panel form" id="contact-form">
       <h3 style="color:var(--navy)">Envoyer un message</h3>
       <div class="row"><div class="field"><label for="cnom">Nom complet</label><input id="cnom" name="nom" required></div><div class="field"><label for="cmail">E-mail</label><input id="cmail" name="email" type="email" required></div></div>
-      <div class="row"><div class="field"><label for="ctel">Téléphone (facultatif)</label><input id="ctel" name="tel" type="tel"></div><div class="field"><label for="csujet">Sujet</label><select id="csujet" name="sujet"><option>Renseignement</option><option>État civil</option><option>Urbanisme</option><option>Partenariat</option><option>Suggestion</option><option>Autre</option></select></div></div>
+      <div class="row"><div class="field"><label for="ctel">Téléphone (facultatif)</label><input id="ctel" name="tel" type="tel"></div><div class="field"><label for="csujet">Sujet</label><select id="csujet" name="sujet"><option>Renseignement</option><option>État civil</option><option>Urbanisme</option><option>Réclamation</option><option>Partenariat</option><option>Suggestion</option><option>Autre</option></select></div></div>
+      <div class="field"><label for="cdest">Destinataire</label><select id="cdest" name="arr"></select></div>
       <div class="field"><label for="cmsg">Message</label><textarea id="cmsg" name="message" required></textarea></div>
+      <div class="field"><label for="cpj">Pièces jointes (facultatif)</label><label class="dropzone" for="cpj"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.4 11.1l-9.2 9.2a6 6 0 01-8.5-8.5l9.2-9.2a4 4 0 015.7 5.7l-9.2 9.2a2 2 0 01-2.8-2.8l8.5-8.5"/></svg><span><b>Joindre un document ou une photo</b><small>PDF ou image · 3 fichiers maximum</small></span></label><input id="cpj" name="pj" type="file" multiple accept="image/*,application/pdf" class="sr-only"><div class="pjlist" id="cpj-list"></div></div>
       <button class="btn btn-orange" type="submit">Envoyer</button>
     </form>
   </div>
