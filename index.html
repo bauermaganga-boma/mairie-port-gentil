@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="only light">
+<meta name="theme-color" content="#07325a">
+<title>Mairie de Port-Gentil – Démarches en ligne, projets et actualités</title>
+<meta name="description" content="Mairie de Port-Gentil (Ogooué-Maritime, Gabon) : démarches d'état civil en ligne, suivi de dossier, signalements, projets des quatre arrondissements et actualités de la commune.">
+<meta property="og:title" content="Mairie de Port-Gentil">
+<meta property="og:description" content="Une mairie moderne au service des habitants : démarches en ligne, suivi de dossier, projets et actualités.">
+<meta property="og:image" content="assets/img/hotel-de-ville.jpg">
+<link rel="icon" href="assets/img/logo-pog.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="index">
+<div class="flagbar"></div>
+<div id="site-header"></div>
+
+<section class="hero" style="padding:0">
+  <div class="hero-slides">
+    <figure class="on"><img src="assets/img/hotel-de-ville.jpg" alt="" style="object-position:center 40%"></figure>
+    <figure><img src="assets/img/lip-matanda-perspective.jpg" alt=""></figure>
+    <figure><img src="assets/img/conseil-municipal.jpg" alt=""></figure>
+    <figure><img src="assets/img/lip-matanda-ceremonie.jpg" alt="" style="object-position:70% 30%"></figure>
+  </div>
+  <div class="wrap">
+    <span class="eyebrow rv">Commune de Port-Gentil · Ogooué-Maritime</span>
+    <h1 class="rv d1">Votre mairie, <em>plus proche, plus rapide.</em></h1>
+    <p class="lead rv d2">Actes d'état civil, mariage, urbanisme, signalements : faites vos démarches en ligne, suivez votre dossier pas à pas et découvrez les chantiers qui transforment la capitale économique du Gabon.</p>
+    <div class="cta rv d3">
+      <a class="btn btn-orange" href="demarches.html#demande">Faire une démarche en ligne <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 5l7 7-7 7"/></svg></a>
+      <a class="btn btn-ghost" href="demarches.html#suivi">Suivre mon dossier</a>
+    </div>
+    <div class="quick rv d3" id="quick-access"></div>
+  </div>
+  <div class="hero-dots"></div>
+  <svg class="wave" viewBox="0 0 1440 110" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 60 C 240 110 480 10 720 50 S 1200 100 1500 40 V110 H0Z" fill="rgba(245,248,252,.35)"/>
+    <path d="M0 80 C 300 40 520 110 760 80 S 1180 40 1500 80 V110 H0Z" fill="#f5f8fc"/>
+  </svg>
+</section>
+
+<div class="stats"><div class="wrap"><div class="grid">
+  <div class="stat"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div><div><b data-count="136462">0</b><span>habitants (recensement 2013)</span></div></div>
+  <div class="stat"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4zM8 2v16M16 6v16"/></svg></div><div><b data-count="4">0</b><span>arrondissements et leurs mairies</span></div></div>
+  <div class="stat"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H5a2 2 0 010-4h13v4M3 5v14a2 2 0 002 2h15V7"/><circle cx="16" cy="14" r="1.5"/></svg></div><div><b data-count="23.9" data-dec="1" data-suffix=" Md">0</b><span>FCFA de budget 2026</span></div></div>
+  <div class="stat"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></div><div><b data-count="848">0</b><span>logements lancés à Lip Matanda</span></div></div>
+</div></div></div>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="eyebrow rv">Démarches en ligne</span><h2 class="rv d1">Ce dont vous avez besoin, sans faire la queue</h2></div>
+      <a class="btn btn-line rv" href="demarches.html">Toutes les démarches</a>
+    </div>
+    <div class="cards swipe" id="dem-grid" data-limit="8"></div>
+    <p class="swipe-hint">Faites glisser pour voir plus →</p>
+  </div>
+</section>
+
+<section class="bg-white">
+  <div class="wrap mot">
+    <div class="ph rv"><img src="assets/img/maire-bureau.jpg" alt="Pascal Houangni Ambouroue, maire de Port-Gentil" loading="lazy"><div class="badge"><b>Élu le 9 novembre 2025</b><span>Maire de Port-Gentil</span></div></div>
+    <div>
+      <span class="eyebrow rv">Le maire</span>
+      <h2 class="rv d1" style="font-size:clamp(1.7rem,3.2vw,2.5rem);color:var(--navy);margin-top:.6rem">Pascal Houangni Ambouroue</h2>
+      <blockquote class="rv d2">Les priorités de la mandature : moderniser et digitaliser l'administration, assainir les quartiers et améliorer le cadre de vie dans les quatre arrondissements.</blockquote>
+      <p class="lead-p rv d2">Financier de formation (BNP Paribas, Crédit Agricole), ancien directeur général de la BVMAC et ancien ministre, le maire a engagé depuis son élection une profonde réorganisation de la mairie : budget record, audit interne, lutte contre l'occupation anarchique du domaine public et modernisation des services.</p>
+      <div class="cta rv d3" style="display:flex;gap:.7rem;flex-wrap:wrap;margin-top:1.4rem"><a class="btn btn-navy" href="mairie.html">Découvrir la mairie</a><a class="btn btn-line" href="demarches.html?d=audience#demande">Demander une audience</a></div>
+    </div>
+  </div>
+</section>
+
+<section class="bg-navy">
+  <div class="wrap">
+    <div class="center"><div class="sec-head"><span class="eyebrow">Budget 2026</span><h2>Un budget historique pour transformer la ville</h2><p>Adopté à l'unanimité par le conseil municipal le 18 avril 2026, avec 21 délibérations.</p></div></div>
+    <div class="budget">
+      <div class="bcard rv"><b data-count="23.9" data-dec="1" data-suffix=" Md">0</b><span>FCFA de budget, contre 9,5 milliards en 2024</span></div>
+      <div class="bcard rv d1"><b data-count="250" data-suffix=" M">0</b><span>FCFA d'infrastructures pour chacun des 4 arrondissements</span></div>
+      <div class="bcard rv d2"><b data-count="40" data-suffix=" %">0</b><span>consacrés à l'investissement</span></div>
+      <div class="bcard rv d3"><b data-count="21">0</b><span>délibérations adoptées le 18 avril 2026</span></div>
+    </div>
+    <div class="prio">
+      <div class="rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12c2-2 4-2 6 0s4 2 6 0 4-2 6 0M2 18c2-2 4-2 6 0s4 2 6 0 4-2 6 0M2 6c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>Curage des canaux & lutte contre les inondations</div>
+      <div class="rv d1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 22L8 2M20 22L16 2M12 4v3M12 11v3M12 18v3"/></svg>Voiries secondaires dans les quartiers</div>
+      <div class="rv d2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z"/></svg>Éclairage public</div>
+    </div>
+    <p class="src-note center">Source : <a href="https://directinfosgabon.com/mairie-de-port-gentil-un-budget-historique-de-24-milliards-de-fcfa-pour-transformer-la-cite-petroliere/" target="_blank" rel="noopener">Direct Infos Gabon, avril 2026</a></p>
+  </div>
+</section>
+
+<section class="espace-sec" id="espace-numerique">
+  <div class="wrap">
+    <div class="center"><div class="sec-head"><span class="eyebrow rv">Mairie numérique</span><h2 class="rv d1">Un back-office pour toute l'administration municipale</h2><p class="rv d2">Les demandes des habitants arrivent directement dans les services ; le cabinet du maire suit en temps réel les dossiers, les recettes, les stocks et les chantiers des quatre arrondissements.</p></div></div>
+    <div class="access" id="access-cards"></div>
+  </div>
+</section>
+
+<section class="bg-white">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="eyebrow rv">Projets & chantiers</span><h2 class="rv d1">La ville se transforme</h2></div>
+      <a class="btn btn-line rv" href="projets.html">Tous les projets</a>
+    </div>
+    <div class="news swipe" id="proj-grid" data-limit="3"></div>
+    <p class="swipe-hint">Faites glisser pour voir plus →</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="eyebrow rv">Actualités</span><h2 class="rv d1">La vie de la commune</h2></div>
+      <a class="btn btn-line rv" href="actualites.html">Toutes les actualités</a>
+    </div>
+    <div class="news swipe" id="news" data-limit="3"></div>
+    <p class="swipe-hint">Faites glisser pour voir plus →</p>
+    <div class="sec-head" style="margin:3.5rem 0 1.4rem"><div><span class="eyebrow rv">Avis & communiqués</span><h2 class="rv d1" style="font-size:clamp(1.4rem,2.6vw,2rem)">Publiés par les services de la mairie</h2></div></div>
+    <div class="avis-list" id="avis" data-limit="3"></div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="band rv">
+      <div><span class="eyebrow">Cadre de vie</span><h2>Un canal bouché, un lampadaire éteint, un dépôt d'ordures ?</h2><p>Signalez-le en 1 minute : votre message arrive directement aux services techniques, et vous suivez l'intervention.</p></div>
+      <a class="btn btn-orange" href="demarches.html?d=signalement#demande">Signaler un problème</a>
+    </div>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

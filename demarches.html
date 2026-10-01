@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="only light">
+<meta name="theme-color" content="#07325a">
+<title>Démarches en ligne – Mairie de Port-Gentil</title>
+<meta name="description" content="Démarches en ligne à la Mairie de Port-Gentil : actes d'état civil, mariage, urbanisme, domaine public, signalements, demande d'audience et suivi de dossier.">
+<meta property="og:title" content="Démarches en ligne – Mairie de Port-Gentil">
+<meta property="og:description" content="Démarches en ligne à la Mairie de Port-Gentil : actes d'état civil, mariage, urbanisme, domaine public, signalements, demande d'audience et suivi de dossier.">
+<meta property="og:image" content="assets/img/hotel-de-ville.jpg">
+<link rel="icon" href="assets/img/logo-pog.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="demarches">
+<div class="flagbar"></div>
+<div id="site-header"></div>
+
+<section class="page-hero">
+  <img class="bg" src="assets/img/hotel-de-ville.jpg" alt="" style="object-position:center 40%">
+  <div class="wrap">
+    <p class="crumbs"><a href="index.html">Accueil</a> › Démarches</p>
+    <span class="eyebrow">Mairie numérique</span>
+    <h1>Vos démarches en ligne, suivies pas à pas</h1>
+    <p>Choisissez votre démarche, déposez votre demande en 3 étapes et recevez un numéro de dossier pour en suivre l'avancement — sans vous déplacer inutilement.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="tabs" id="dem-tabs"></div>
+    <div class="cards" id="dem-grid"></div>
+  </div>
+</section>
+
+<section class="bg-white" id="demande">
+  <div class="wrap split" style="align-items:start">
+    <div>
+      <span class="eyebrow rv">Dépôt en ligne</span>
+      <h2 class="rv d1" style="font-size:clamp(1.7rem,3.2vw,2.4rem);color:var(--navy);margin:.6rem 0 1rem">Faire une demande</h2>
+      <p class="lead-p rv d2">Votre demande est transmise directement au service concerné de votre arrondissement. Vous êtes informé(e) de chaque étape : prise en charge, pièce manquante, document prêt.</p>
+      <ul class="checks rv d2">
+        <li>Un numéro de dossier unique remis immédiatement</li>
+        <li>Suivi en ligne, à tout moment</li>
+        <li>Déplacement uniquement pour le retrait, quand le document est prêt</li>
+      </ul>
+      <div class="panel rv d3" id="dem-info" style="box-shadow:none;font-size:.9rem;color:var(--muted)"></div>
+    </div>
+    <form class="panel form" id="demande-form" novalidate>
+      <div class="steps"><span></span><span></span><span></span></div>
+      <div class="fstep">
+        <h3 style="color:var(--navy)">1. Votre démarche</h3>
+        <div class="field"><label for="type">Démarche</label><select id="type" name="type" required></select></div>
+        <div class="field"><label for="arr">Arrondissement concerné</label><select id="arr" name="arr" required><option value="">— Choisir —</option><option value="1">1er arrondissement</option><option value="2">2e arrondissement</option><option value="3">3e arrondissement</option><option value="4">4e arrondissement</option></select></div>
+        <button class="btn btn-navy" type="button" data-next>Continuer</button>
+      </div>
+      <div class="fstep">
+        <h3 style="color:var(--navy)">2. Vos coordonnées</h3>
+        <div class="row"><div class="field"><label for="prenom">Prénom(s)</label><input id="prenom" name="prenom" required autocomplete="given-name"></div><div class="field"><label for="nom">Nom</label><input id="nom" name="nom" required autocomplete="family-name"></div></div>
+        <div class="row"><div class="field"><label for="tel">Téléphone</label><input id="tel" name="tel" type="tel" required placeholder="077 00 00 00" autocomplete="tel"></div><div class="field"><label for="email">E-mail (facultatif)</label><input id="email" name="email" type="email" autocomplete="email"></div></div>
+        <div class="field"><label for="quartier">Quartier</label><input id="quartier" name="quartier" list="quartiers" required placeholder="Ex. Matanda, Grand Village…"><datalist id="quartiers"></datalist></div>
+        <div style="display:flex;gap:.6rem"><button class="btn btn-line" type="button" data-prev>Retour</button><button class="btn btn-navy" type="button" data-next>Continuer</button></div>
+      </div>
+      <div class="fstep">
+        <h3 style="color:var(--navy)">3. Précisions</h3>
+        <div id="std-fields"><div class="field"><label for="details">Précisions utiles (nom de la personne concernée, date de l'acte, objet de l'audience…)</label><textarea id="details" name="details"></textarea></div></div>
+        <div id="sig-fields" hidden>
+          <div class="field"><label for="sigtype">Type de problème</label><select id="sigtype" name="sigtype" data-req="1"></select></div>
+          <div class="field"><label for="lieu">Lieu précis (rue, repère)</label><input id="lieu" name="lieu" data-req="1" placeholder="Ex. derrière l'école, près du marché…"></div>
+          <div class="field"><label for="description">Description</label><textarea id="description" name="description" data-req="1"></textarea></div>
+        </div>
+        <label style="display:flex;gap:.6rem;font-size:.86rem;color:var(--muted)"><input type="checkbox" required style="margin-top:.25rem"> J'accepte que mes informations soient utilisées par la mairie pour traiter ma demande.</label>
+        <div style="display:flex;gap:.6rem"><button class="btn btn-line" type="button" data-prev>Retour</button><button class="btn btn-orange" type="submit">Envoyer ma demande</button></div>
+      </div>
+    </form>
+  </div>
+</section>
+
+<section id="suivi">
+  <div class="wrap suivi-box">
+    <div>
+      <span class="eyebrow rv">Suivi de dossier</span>
+      <h2 class="rv d1" style="font-size:clamp(1.7rem,3.2vw,2.4rem);color:var(--navy);margin:.6rem 0 1rem">Où en est ma demande ?</h2>
+      <p class="lead-p rv d2">Saisissez le numéro reçu lors du dépôt (format <b>PG-26-…</b> pour une démarche, <b>SIG-26-…</b> pour un signalement).</p>
+      <form class="form rv d2" id="suivi-form" style="margin-top:1.4rem"><div class="field"><label for="ref">Numéro de dossier</label><input id="ref" name="ref" required placeholder="PG-26-01234" style="text-transform:uppercase"></div><button class="btn btn-navy" style="justify-content:center">Rechercher mon dossier</button></form>
+      <p class="imgnote" style="margin-top:.8rem">Démonstration : essayez le dossier <b>PG-26-01234</b>.</p>
+    </div>
+    <div id="suivi-out"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><p>Le détail de votre dossier s'affichera ici.</p></div></div>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

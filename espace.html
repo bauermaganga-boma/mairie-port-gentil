@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="only light">
+<meta name="theme-color" content="#07325a">
+<title>Espace agents – Mairie de Port-Gentil</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/img/logo-pog.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="espace">
+<div class="flagbar"></div>
+<div id="site-header"></div>
+
+<div class="auth">
+  <div class="side">
+    <img id="side-img" src="assets/img/hotel-de-ville.jpg" alt="">
+    <span class="eyebrow">Espace numérique de la mairie</span>
+    <h2 id="side-title">Piloter la commune en temps réel.</h2>
+    <p id="side-text"></p>
+  </div>
+  <div class="main">
+    <div class="box">
+      <h1>Connexion agents</h1>
+      <p style="color:var(--muted)">Accès réservé au personnel de la mairie centrale et des mairies d'arrondissement.</p>
+      <div class="role-sw" role="tablist">
+        <button type="button" data-role="cabinet" class="on">Cabinet</button>
+        <button type="button" data-role="services">Services</button>
+        <button type="button" data-role="arrondissement">Arrondissements</button>
+      </div>
+      <form class="form" id="login-form">
+        <div class="field"><label for="login">Identifiant</label><input id="login" name="login" required autocomplete="username"></div>
+        <div class="field"><label for="pwd">Mot de passe</label><input id="pwd" name="pwd" type="password" required autocomplete="current-password"></div>
+        <button class="btn btn-navy" type="submit" style="justify-content:center">Se connecter</button>
+      </form>
+      <div class="demo" id="demo"></div>
+    </div>
+  </div>
+</div>
+
+<div id="site-footer"></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/main.js"></script>
+<script>
+(() => {
+  const cfg = {
+    cabinet: {img:"maire-bureau", t:"Piloter la commune en temps réel.", p:"Tableau de bord, alertes automatiques, recettes, chantiers et agenda : une vue d'ensemble des quatre arrondissements.",
+      demo:[["maire","pog2026","Cabinet du maire — accès complet"],["secretariat","admin2026","Secrétariat général — accès complet + comptes"]]},
+    services: {img:"conseil-municipal", t:"Chaque service, son outil.", p:"État civil, services techniques, finances, ressources humaines : chacun traite ses dossiers et tout reste tracé.",
+      demo:[["etat.civil","agent2026","État civil — demandes, registre, stocks"],["services.techniques","agent2026","Services techniques — signalements, chantiers"],["recettes","agent2026","Finances — encaissements, quittances"],["rh","agent2026","Ressources humaines — dossiers du personnel"]]},
+    arrondissement: {img:"terrain-4e", t:"La proximité, outillée.", p:"Chaque mairie d'arrondissement gère ses demandes, signalements, actes et chantiers ; ses chiffres remontent automatiquement à la mairie centrale.",
+      demo:[["arr4","arr2026","Mairie du 4e arrondissement"],["arr1","arr2026","Mairie du 1er arrondissement"]]},
+  };
+  let role = new URLSearchParams(location.search).get("role");
+  if (!cfg[role]) role = "cabinet";
+  const set = r => {
+    role = r; const c = cfg[r];
+    document.querySelectorAll(".role-sw button").forEach(b => b.classList.toggle("on", b.dataset.role === r));
+    document.getElementById("side-img").src = `assets/img/${c.img}.jpg`;
+    document.getElementById("side-title").textContent = c.t; document.getElementById("side-text").textContent = c.p;
+    const dm = document.getElementById("demo"); dm.style.display = (window.ESM_CONFIG || {}).showDemo === false ? "none" : "";
+    dm.innerHTML = `<b>Comptes de démonstration</b> — cliquez sur un compte pour le tester :` + c.demo.map(([l, p, n]) => `<div class="acc"><code data-l="${l}" data-p="${p}">${l}</code> / <code data-l="${l}" data-p="${p}">${p}</code> <span>${n}</span></div>`).join("");
+  };
+  document.querySelector(".role-sw").addEventListener("click", e => { const b = e.target.closest("button"); if (b) set(b.dataset.role); });
+  document.getElementById("demo").addEventListener("click", e => { const c = e.target.closest("code"); if (!c) return; document.getElementById("login").value = c.dataset.l; document.getElementById("pwd").value = c.dataset.p; document.getElementById("login-form").requestSubmit(); });
+  document.getElementById("login-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const btn = e.target.querySelector("button"); btn.disabled = true; btn.textContent = "Connexion…";
+    let u = null;
+    try { u = await Store.login(e.target.login.value, e.target.pwd.value); } catch (err) { toast("Connexion au serveur impossible.", "err"); }
+    btn.disabled = false; btn.textContent = "Se connecter";
+    if (!u) return toast("Identifiant ou mot de passe incorrect.", "err");
+    toast(`Bienvenue — ${u.titre || u.prenom} !`, "ok");
+    setTimeout(() => location.href = "agents.html", 500);
+  });
+  set(role);
+  const P = new URLSearchParams(location.search), E = ESPACES.find(x => x.role === role);
+  if (P.get("demo") === "1" && E && (window.ESM_CONFIG || {}).showDemo !== false) {
+    document.getElementById("login").value = E.demo.login; document.getElementById("pwd").value = E.demo.pwd;
+    toast(`Connexion à l'espace de démonstration « ${E.t} »…`);
+    setTimeout(() => document.getElementById("login-form").requestSubmit(), 700);
+  }
+})();
+</script>
+</body>
+</html>

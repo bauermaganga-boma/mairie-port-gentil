@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="only light">
+<meta name="theme-color" content="#07325a">
+<title>Contact – Mairie de Port-Gentil</title>
+<meta name="description" content="Contacter la Mairie de Port-Gentil : formulaire en ligne, demande d'audience, Facebook.">
+<meta property="og:title" content="Contact – Mairie de Port-Gentil">
+<meta property="og:description" content="Contacter la Mairie de Port-Gentil : formulaire en ligne, demande d'audience, Facebook.">
+<meta property="og:image" content="assets/img/hotel-de-ville.jpg">
+<link rel="icon" href="assets/img/logo-pog.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="contact">
+<div class="flagbar"></div>
+<div id="site-header"></div>
+
+<section class="page-hero">
+  <img class="bg" src="assets/img/conseil-municipal.jpg" alt="" style="object-position:center">
+  <div class="wrap">
+    <p class="crumbs"><a href="index.html">Accueil</a> › Contact</p>
+    <span class="eyebrow">Contact</span>
+    <h1>Écrire à la mairie</h1>
+    <p>Une question, une suggestion, une demande de partenariat ? Votre message est transmis au secrétariat de la mairie.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap split" style="align-items:start">
+    <div><h2 style="color:var(--navy);margin-bottom:1.2rem">Coordonnées</h2><div class="cinfo" id="contact-info"></div></div>
+    <form class="panel form" id="contact-form">
+      <h3 style="color:var(--navy)">Envoyer un message</h3>
+      <div class="row"><div class="field"><label for="cnom">Nom complet</label><input id="cnom" name="nom" required></div><div class="field"><label for="cmail">E-mail</label><input id="cmail" name="email" type="email" required></div></div>
+      <div class="row"><div class="field"><label for="ctel">Téléphone (facultatif)</label><input id="ctel" name="tel" type="tel"></div><div class="field"><label for="csujet">Sujet</label><select id="csujet" name="sujet"><option>Renseignement</option><option>État civil</option><option>Urbanisme</option><option>Partenariat</option><option>Suggestion</option><option>Autre</option></select></div></div>
+      <div class="field"><label for="cmsg">Message</label><textarea id="cmsg" name="message" required></textarea></div>
+      <button class="btn btn-orange" type="submit">Envoyer</button>
+    </form>
+  </div>
+  <div class="wrap"><iframe class="map" title="Carte de Port-Gentil" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=8.70%2C-0.78%2C8.82%2C-0.66&amp;layer=mapnik"></iframe></div>
+</section>
+
+<div id="site-footer"></div>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>
